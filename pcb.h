@@ -8,14 +8,50 @@
 #ifndef PCB_H_
 #define PCB_H_
 
+#define min_stack_size 1024
+#define max_stack_size 65535
+
+#include "Thread.h"
+#include "list.h"
+
 class PCB {
+	static ID global_id;
 public:
+	enum State { NEW, READY, BLOCKED, FINISHED, IDLE};
+
+	PCB();
+	PCB(Thread* my_thread, StackSize stack_size = defaultStackSize, Time time_slice = defaultTimeSlice);
+
+	void start();
+	void wait_to_complete();
+	ID get_id();
+	static ID get_running_id();
+	static Thread* get_thread_by_id(ID id);
+
+	static void wrapper();
+
+	void block();
+	void unblock();
+	static PCB* get_idle_PCB();
+
+	~PCB();
+
 	unsigned sp;
 	unsigned ss;
 	unsigned bp;
 	unsigned* stack;
 	unsigned finished;
-	int time_slice;
+	Time time_slice;
+	StackSize stack_size;
+	int lock_cnt;
+	int unblocked_by_time;
+	Thread* my_thread;
+	State state;
+	ID pcb_id;
+	List blocked_PCBs;
+
+	// for testing
+	static int live_PCBs;
 };
 
 #endif /* PCB_H_ */
