@@ -6,7 +6,9 @@
  */
 
 #include "idle.h"
+#include <IOSTREAM.H>
 
 void Idle::run() {
+	//cout << "IDLE THREAD";
 	while(1) {}
 }

@@ -27,9 +27,9 @@ PCB::PCB() {
 	System::all_PCBs.push_back(this);
 	// for testing
 	PCB::live_PCBs++;
-	disable_interrupts
-	cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << ", lock_cnt: " << lock_cnt << endl;
-	enable_interrupts
+	//disable_interrupts
+	//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << ", lock_cnt: " << lock_cnt << endl;
+	//enable_interrupts
 	unlock
 }
 
@@ -63,9 +63,9 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 	System::all_PCBs.push_back(this);
 	// for testing
 	PCB::live_PCBs++;
-	disable_interrupts
-	cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
-	enable_interrupts
+	//disable_interrupts
+	//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
+	//enable_interrupts
 	unlock
 }
 

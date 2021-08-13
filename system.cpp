@@ -66,7 +66,7 @@ void interrupt System::timer(...){
 
 		System::running = Scheduler::get();
 		if(System::running == 0) {
-			// TODO: add IDLE thread and PCB
+			System::running = System::idle_PCB;
 		}
 		tsp = System::running->sp;
 		tss = System::running->ss;
