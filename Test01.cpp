@@ -2,69 +2,62 @@
 #include "Semaphor.h"
 #include <STDLIB.H>
 #include <IOSTREAM.H>
+#include "system.h"
 int syncPrintf(const char *format, ...);
 void dumbSleep(int delay);
-/*
- 	 Test: Semafori sa spavanjem 4
-*/
 
-int t=-1;
+Semaphore sem;
 
-const int n=15;
-
-Semaphore s(1);
-
-class TestThread : public Thread
-{
-private:
-	Time waitTime;
-
-public:
-
-	TestThread(Time WT): Thread(), waitTime(WT){}
-	~TestThread()
-	{
-		waitToComplete();
-	}
-protected:
-
-	void run();
-
+class Producer : public Thread {
+    public:
+        Producer() : Thread(1, 10) {}
+        virtual void run();
+        ~Producer() {
+            waitToComplete();
+        }
 };
 
-void TestThread::run()
-{
-	syncPrintf("Thread %d waits for %d units of time.\n",getId(),waitTime);
-	int r = s.wait(waitTime);
-	if(getId()%2)
-		s.signal();
-	syncPrintf("Thread %d finished: r = %d\n", getId(),r);
+void Producer::run() {
+    while (1) {
+        syncPrintf("Prodooc\n");
+        sem.signal();
+        dumbSleep(rand() % 1000);
+    }
 }
 
-void tick()
-{
-	t++;
-	if(t)
-		syncPrintf("%d\n",t);
+class Consumer : public Thread {
+    public:
+        Consumer() : Thread(1, 10) {}
+        virtual void run();
+        ~Consumer() {
+            waitToComplete();
+        }
+};
+
+void Consumer::run() {
+    while (1) {
+        int waitResult = sem.wait(0);
+        if (waitResult) {
+            syncPrintf("Consoomed %d\n", getId());
+        } else {
+            syncPrintf("CONSOOM FAILED %d\n", getId());
+        }
+        dumbSleep(rand() % 1000);
+    }
 }
 
-int userMain(int argc, char** argv)
-{
-	syncPrintf("Test starts.\n");
-	TestThread* t[n];
-	int i;
-	for(i=0;i<n;i++)
-	{
-		t[i] = new TestThread(5*(i+1));
-		t[i]->start();
-	}
-	for(i=0;i<n;i++)
-	{
-		t[i]->waitToComplete();
-	}
-	delete t;
-	syncPrintf("Test ends.\n");
-	return 0;
+void tick() {}
+
+int userMain(int argc, char* argv[]) {
+    (void) argc;
+    (void) argv;
+    Producer p;
+    Consumer c[10];
+  //  lock
+    p.start();
+    for (unsigned i = 0; i < 10; ++i) {
+        c[i].start();
+    }
+   // unlock
+    return 0;
 }
-
-

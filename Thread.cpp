@@ -11,6 +11,7 @@ Thread::Thread(StackSize stackSize, Time timeSlice) {
 Thread::~Thread() {
 	//waitToComplete();
 	lock
+	//System::all_PCBs.remove_element(myPCB);
 	if(myPCB != 0)
 		delete myPCB;
 	myPCB = 0;

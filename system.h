@@ -27,9 +27,8 @@ void tick();
 // Zabranjuje prekide bez promene konteksta
 #define lock ++System::lock_counter;
 // Dozvoljava prekide
-#define unlock\
-	if(--System::lock_counter < 0) {cout << "ERROR";}\
-	if(System::lock_counter == 0 && System::lock_flag) { dispatch(); }\
+#define unlock if(--System::lock_counter < 0) {cout << "ERROR";}
+//	if(System::lock_counter == 0 && System::lock_flag) { dispatch(); }\
 
 // Zakljucava globalnu listu semafora
 #define sem_lock ++System::sem_lock_counter;

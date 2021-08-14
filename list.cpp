@@ -23,22 +23,22 @@ List::Node::~Node() {
 }
 
 void List::print_list() {
-/*	Node* tmp = head;
-	std::cout << "\nLista: ";
+	Node* tmp = head;
+	cout << "\nLista: ";
 	while (tmp) {
-		std::cout << *((int*)(tmp->data)) << " ";
+		cout << *((int*)(tmp->data)) << " ";
 		tmp = tmp->next;
 	}
 	tmp = head;
 
-	std::cout << "\n";
+	cout << "\n";
 	while (tmp) {
-		std::cout << "(" << (tmp->prev != nullptr ? *((int*)(tmp->prev->data)) : 0) << ")" << *((int*)(tmp->data)) << "(" << (tmp->next != nullptr ? *((int*)(tmp->next->data)) : 0) << ")" << " ";
+		cout << "(" << (tmp->prev != nullptr ? ((tmp->prev->data)) : 0) << ")" << ((tmp->data)) << "(" << (tmp->next != nullptr ? ((tmp->next->data)) : 0) << ")" << " ";
 		tmp = tmp->next;
 	}
-	std::cout << "\nVelicina liste : " << size << ", broj cvorova : " << number_of_nodes << std::endl;
-	std::cout << "Head: " << *((int*)(head->data)) << ", tail: " << *((int*)(tail->data)) << ", current: " << (current ? *(int*)(current->data) : 0) << std::endl << std::endl;
-*/
+	cout << "\nVelicina liste : " << size << ", broj svih cvorova : " << number_of_nodes << endl;
+	cout << "Head: " << ((head->data)) << ", tail: " << ((tail->data)) << ", current: " << (current ? (current->data) : 0) << endl << endl;
+
 }
 
 List::List() {

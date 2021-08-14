@@ -60,7 +60,7 @@ void interrupt System::timer(...){
 
 	if ((System::time == 0 && !in_locked_section) || System::context_switch_on_demand) {
 		System::context_switch_on_demand = 0;
-		System::lock_flag = 0;
+		//System::lock_flag = 0;
 
 		asm {
 			// cuva sp
@@ -72,20 +72,20 @@ void interrupt System::timer(...){
 		System::running->sp = tsp;
 		System::running->ss = tss;
 		System::running->bp = tbp;
-		System::running->lock_cnt = System::lock_counter;
+//		System::running->lock_cnt = System::lock_counter;
 
 		if(System::running->state == PCB::READY)
 			Scheduler::put((PCB*)System::running);
 
 		System::running = Scheduler::get();
 		if(System::running == 0) {
-			syncPrintf("\nU IDLE!");
+			//syncPrintf("\nU IDLE!");
 			System::running = System::idle_PCB;
 		}
 		tsp = System::running->sp;
 		tss = System::running->ss;
 		tbp = System::running->bp;
-		System::lock_counter = System::running->lock_cnt;
+//		System::lock_counter = System::running->lock_cnt;
 		System::time = running->time_slice;
 
 		asm {
@@ -94,9 +94,9 @@ void interrupt System::timer(...){
 			mov bp, tbp
 		}
 	}
-	else if(System::time == 0 && in_locked_section) {
-		System::lock_flag = 1;
-	}
+	//else if(System::time == 0 && in_locked_section) {
+	//	System::lock_flag = 1;
+	//}
 }
 
 /*void System::dispatch(){ // sinhrona promena konteksta
@@ -110,16 +110,17 @@ void interrupt System::timer(...){
 void System::inic(){
 	lock
 
-	disable_interrupts
-	System::old_isr = getvect(8);
-	setvect(8, System::timer);
-	enable_interrupts
-
 	System::main_PCB = new PCB();
 	System::idle_thread = new Idle();
 	System::idle_PCB = PCB::get_idle_PCB();
 	idle_PCB->state = PCB::IDLE;
 	System::running = System::main_PCB;
+
+
+	disable_interrupts
+	System::old_isr = getvect(8);
+	setvect(8, System::timer);
+	enable_interrupts
 
 	unlock
 }
@@ -131,16 +132,30 @@ void System::restore(){
 	setvect(8, System::old_isr);
 	enable_interrupts
 
-	lock
+//	lock
 
 	disable_interrupts
-	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
+	syncPrintf("\n\n\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
 	enable_interrupts
 
+
+	delete System::main_PCB;
+	delete System::idle_thread;
+
+
+/*
+	// deleting remaining PCBs
+	while(!System::all_PCBs.empty()) {
+		PCB* pcb = (PCB*)(System::all_PCBs.pop_front());
+		if(pcb)
+			delete pcb;
+	}
+*/
+/*
 	// deleting remaining semaphores
 	sem_lock
 	while(!System::all_semaphores.empty()) {
@@ -151,22 +166,19 @@ void System::restore(){
 
 	}
 	sem_unlock
-
-	// deleting remaining PCBs
-	while(!System::all_PCBs.empty()) {
-		PCB* pcb = (PCB*)(System::all_PCBs.pop_front());
-		if(pcb)
-			delete pcb;
-	}
+*/
+	System::all_PCBs.print_list();
+	System::all_semaphores.print_list();
 
 	disable_interrupts
 	// check print
-	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
+	syncPrintf("\n\n\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
 	enable_interrupts
 
-	unlock
+//	unlock
+
 }

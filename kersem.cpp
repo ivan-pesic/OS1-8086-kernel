@@ -16,7 +16,9 @@ int KernelSem::live_semaphores = 0;
 KernelSem::KernelSem(int initial_value) {
 	lock
 	value = initial_value;
+	sem_lock
 	System::all_semaphores.push_back(this);
+	sem_unlock
 	KernelSem::live_semaphores++;
 	unlock
 }
@@ -25,12 +27,14 @@ KernelSem::~KernelSem() {
 	lock
 	sem_lock
 	System::all_semaphores.remove_element(this);
+	//cout << waiting.size_of_list();
 	while(!waiting.empty()) {
 		waiting_data* wd = (waiting_data*)(waiting.pop_front());
 		delete wd;
 	}
-	sem_unlock
+	//cout << waiting.size_of_list();
 	KernelSem::live_semaphores--;
+	sem_unlock
 	unlock
 }
 
@@ -39,7 +43,8 @@ void KernelSem::tick() {
 	System::all_semaphores.to_front();
 	while (System::all_semaphores.has_current()) {
 		KernelSem* sem = (KernelSem*)(System::all_semaphores.get_current_data());
-		sem->update_list();
+		if(sem)
+			sem->update_list();
 		System::all_semaphores.to_next();
 	}
 	unlock
@@ -81,7 +86,9 @@ int KernelSem::wait(Time max_time_to_wait) {
 			sem_unlock
 		}
 		unlock
+
 		dispatch();
+
 		lock
 		if(System::running->unblocked_by_time) {
 			return_value = 0;
@@ -97,6 +104,7 @@ void KernelSem::signal() {
 	if(value++ < 0) {
 		PCB* potentially_ublocked = 0;
 		sem_lock
+		//waiting.print_list();
 		waiting_data* potential_wd = (waiting_data*)(waiting.pop_back());
 		sem_unlock
 		if(potential_wd) {

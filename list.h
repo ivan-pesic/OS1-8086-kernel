@@ -39,6 +39,7 @@ public:
 	void remove_element(void* data);
 
 	int empty();
+	int size_of_list() const { return size; }
 
 	void to_front();
 	void* get_current_data();

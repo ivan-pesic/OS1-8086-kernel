@@ -12,6 +12,7 @@
 
 typedef unsigned int Time;
 class PCB;
+class Semaphore;
 
 
 class KernelSem {
