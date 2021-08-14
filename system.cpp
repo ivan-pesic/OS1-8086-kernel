@@ -11,11 +11,16 @@
 #include "list.h"
 #include "SCHEDULE.H"
 #include "idle.h"
+#include "kersem.h"
+
+int syncPrintf(const char *format, ...);
 
 volatile PCB* System::running = 0;
 volatile int System::context_switch_on_demand = 0;
 volatile int System::lock_counter = 0;
 volatile int System::lock_flag = 0;
+volatile int System::sem_lock_counter = 0;
+volatile int System::sem_artificial_ticks = 0;
 
 PCB* System::main_PCB = 0;
 PCB* System::idle_PCB = 0;
@@ -36,9 +41,17 @@ List System::all_semaphores;
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
 		(*System::old_isr)();
-		tick();
-		// TODO: implement
-		//Kernel_Sem::tick();
+		if(!sem_locked) {
+			while(System::sem_artificial_ticks >= 0) {
+				tick();
+				KernelSem::tick();
+				System::sem_artificial_ticks--;
+			}
+			System::sem_artificial_ticks = 0;
+		}
+		else {
+			System::sem_artificial_ticks++;
+		}
 	}
 
 	if(!System::context_switch_on_demand && System::time > 0) {
@@ -66,6 +79,7 @@ void interrupt System::timer(...){
 
 		System::running = Scheduler::get();
 		if(System::running == 0) {
+			syncPrintf("\nU IDLE!");
 			System::running = System::idle_PCB;
 		}
 		tsp = System::running->sp;
@@ -94,26 +108,49 @@ void interrupt System::timer(...){
 
 // postavlja novu prekidnu rutinu
 void System::inic(){
+	lock
+
+	disable_interrupts
+	System::old_isr = getvect(8);
+	setvect(8, System::timer);
+	enable_interrupts
+
 	System::main_PCB = new PCB();
 	System::idle_thread = new Idle();
 	System::idle_PCB = PCB::get_idle_PCB();
 	idle_PCB->state = PCB::IDLE;
 	System::running = System::main_PCB;
-	disable_interrupts
-	System::old_isr = getvect(8);
-	setvect(8, System::timer);
-	enable_interrupts
+
+	unlock
 }
 
 // vraca staru prekidnu rutinu
 void System::restore(){
+
 	disable_interrupts
 	setvect(8, System::old_isr);
 	enable_interrupts
 
-	cout << "\nNumber of nodes remaining: " << List::number_of_nodes;
-	cout << "\nLock counter: " << System::lock_counter;
-	cout << "\nLive PCBs: " << PCB::live_PCBs;
+	lock
+
+	disable_interrupts
+	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
+	syncPrintf("\nLock counter: %d", System::lock_counter);
+	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
+	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
+	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
+	enable_interrupts
+
+	// deleting remaining semaphores
+	sem_lock
+	while(!System::all_semaphores.empty()) {
+		KernelSem* sem = (KernelSem*)(System::all_semaphores.pop_front());
+		if(sem) {
+			delete sem;
+		}
+
+	}
+	sem_unlock
 
 	// deleting remaining PCBs
 	while(!System::all_PCBs.empty()) {
@@ -122,8 +159,14 @@ void System::restore(){
 			delete pcb;
 	}
 
+	disable_interrupts
 	// check print
-	cout << "\nNumber of nodes remaining: " << List::number_of_nodes;
-	cout << "\nLock counter: " << System::lock_counter;
-	cout << "\nLive PCBs: " << PCB::live_PCBs;
+	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
+	syncPrintf("\nLock counter: %d", System::lock_counter);
+	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
+	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
+	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
+	enable_interrupts
+
+	unlock
 }

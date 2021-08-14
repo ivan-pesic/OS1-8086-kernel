@@ -1,19 +1,27 @@
 #include "Thread.h"
+#include "Semaphor.h"
+#include <STDLIB.H>
+#include <IOSTREAM.H>
 int syncPrintf(const char *format, ...);
 void dumbSleep(int delay);
 /*
-	Test: Niti maxStack velicine
- */
+ 	 Test: Semafori sa spavanjem 4
+*/
 
-const int n = 10;
+int t=-1;
 
-void tick(){}
+const int n=15;
+
+Semaphore s(1);
 
 class TestThread : public Thread
 {
+private:
+	Time waitTime;
+
 public:
 
-	TestThread(): Thread(65535,2) {};
+	TestThread(Time WT): Thread(), waitTime(WT){}
 	~TestThread()
 	{
 		waitToComplete();
@@ -26,40 +34,37 @@ protected:
 
 void TestThread::run()
 {
-
-	int buffer=2;
-
-	for(int i=0;i<32000;i++)
-	{
-		buffer = 4096/2048;
-		for (int j = 0; j < 1024; j++)
-		{
-			buffer = buffer*2;
-			if(buffer%2)
-				buffer = 2;
-		}
-	}
-
+	syncPrintf("Thread %d waits for %d units of time.\n",getId(),waitTime);
+	int r = s.wait(waitTime);
+	if(getId()%2)
+		s.signal();
+	syncPrintf("Thread %d finished: r = %d\n", getId(),r);
 }
 
+void tick()
+{
+	t++;
+	if(t)
+		syncPrintf("%d\n",t);
+}
 
 int userMain(int argc, char** argv)
 {
-	syncPrintf("Test starts: %d threads.\n",n);
+	syncPrintf("Test starts.\n");
+	TestThread* t[n];
 	int i;
-	TestThread threads[n];
-	Thread *th = 0;
 	for(i=0;i<n;i++)
 	{
-		threads[i].start();
+		t[i] = new TestThread(5*(i+1));
+		t[i]->start();
 	}
 	for(i=0;i<n;i++)
 	{
-		threads[i].waitToComplete();
-		th = Thread::getThreadById(i+3);
-		if (!th) syncPrintf("MEGA ERROR");
-		else syncPrintf("%d. Done!\n",th->getId());
+		t[i]->waitToComplete();
 	}
+	delete t;
 	syncPrintf("Test ends.\n");
 	return 0;
 }
+
+

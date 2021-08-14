@@ -8,7 +8,18 @@
 #ifndef KERSEM_H_
 #define KERSEM_H_
 
+#include "list.h"
+
+typedef unsigned int Time;
+class PCB;
+
+
 class KernelSem {
+public:
+
+	static int waiting_data_counter;
+	static int live_semaphores;
+
 	KernelSem(int initial_value);
 	~KernelSem();
 
@@ -26,10 +37,14 @@ private:
 		Time time_to_wait;
 		waiting_data(PCB* p, KernelSem* ks, Time t) {
 			pcb = p; semaphore = ks; time_to_wait = t;
+			waiting_data_counter++;
+		}
+		~waiting_data() {
+			waiting_data_counter--;
 		}
 	};
 
-	void inser_waiting(waiting_data* wd);
+	void insert_waiting(waiting_data* wd);
 	void increment();
 	int value;
 	List blocked;

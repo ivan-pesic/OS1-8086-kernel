@@ -31,7 +31,15 @@ void tick();
 	if(--System::lock_counter < 0) {cout << "ERROR";}\
 	if(System::lock_counter == 0 && System::lock_flag) { dispatch(); }\
 
+// Zakljucava globalnu listu semafora
+#define sem_lock ++System::sem_lock_counter;
+// Otkljucava globalnu listu semafora
+#define sem_unlock if(--System::sem_lock_counter < 0) { cout << "ERROR";}
+
+// Provera da li se nalazim u zakljucanoj sekciji
 #define in_locked_section (System::lock_counter > 0)
+// Provera da li sam zakljucao globalnu listu semafora
+#define sem_locked (System::sem_lock_counter > 0)
 
 // potpis interrupt rutine
 typedef void interrupt (*p_interrupt)(...);
@@ -53,6 +61,8 @@ public:
 	// for locking
 	static volatile int lock_counter;
 	static volatile int lock_flag;
+	static volatile int sem_lock_counter;
+	static volatile int sem_artificial_ticks;
 	// functions
 	static void interrupt timer(...);
 	static void inic();
