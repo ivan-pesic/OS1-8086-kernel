@@ -79,6 +79,7 @@ int KernelSem::wait(Time max_time_to_wait) {
 		to_block->block();
 		if(max_time_to_wait == 0) {
 			blocked.push_back(to_block);
+			//blocked.print_list();
 		}
 		else {
 			sem_lock
@@ -103,19 +104,23 @@ void KernelSem::signal() {
 	lock
 	if(value++ < 0) {
 		PCB* potentially_ublocked = 0;
-		sem_lock
-		//waiting.print_list();
-		waiting_data* potential_wd = (waiting_data*)(waiting.pop_back());
-		sem_unlock
-		if(potential_wd) {
-			potentially_ublocked = potential_wd->pcb;
-			delete potential_wd;
+		if(!waiting.empty()) {
+			sem_lock
+			//waiting.print_list();
+			waiting_data* potential_wd = (waiting_data*)(waiting.pop_back());
+			sem_unlock
+
+			if(potential_wd) {
+				potentially_ublocked = potential_wd->pcb;
+				potentially_ublocked->unblock();
+				delete potential_wd;
+			}
 		}
-		else {
+
+		else if(!blocked.empty()) {
 			potentially_ublocked = (PCB*)(blocked.pop_front());
-		}
-		if(potentially_ublocked)
 			potentially_ublocked->unblock();
+		}
 	}
 	unlock
 }

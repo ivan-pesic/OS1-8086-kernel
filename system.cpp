@@ -133,7 +133,7 @@ void System::restore(){
 	enable_interrupts
 
 //	lock
-
+/*
 	disable_interrupts
 	syncPrintf("\n\n\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
@@ -141,7 +141,7 @@ void System::restore(){
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
 	enable_interrupts
-
+*/
 
 	delete System::main_PCB;
 	delete System::idle_thread;
@@ -167,12 +167,12 @@ void System::restore(){
 	}
 	sem_unlock
 */
-	System::all_PCBs.print_list();
-	System::all_semaphores.print_list();
+	//System::all_PCBs.print_list();
+	//System::all_semaphores.print_list();
 
 	disable_interrupts
 	// check print
-	syncPrintf("\n\n\nNumber of nodes remaining: %d", List::number_of_nodes);
+	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);

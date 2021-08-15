@@ -7,11 +7,11 @@ int syncPrintf(const char *format, ...)
 {
 	int res;
 	va_list args;
-	disable_interrupts
+	lock
 		va_start(args, format);
 	res = vprintf(format, args);
 	va_end(args);
-	enable_interrupts
+	unlock
 		return res;
 }
 
