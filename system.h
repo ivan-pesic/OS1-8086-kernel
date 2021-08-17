@@ -13,6 +13,7 @@
 class PCB;
 class List;
 class Thread;
+class IVTEntry;
 
 // deklaracija dispatch-a
 void dispatch();
@@ -48,6 +49,7 @@ public:
 	// structures
 	static List all_PCBs;
 	static List all_semaphores;
+	static IVTEntry* entries[256];
 	// necessary variables
 	static PCB* main_PCB;
 	static PCB* idle_PCB;

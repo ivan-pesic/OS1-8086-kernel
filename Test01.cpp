@@ -3,55 +3,118 @@
 #include <STDLIB.H>
 #include <IOSTREAM.H>
 #include "system.h"
+#include "Event.h"
 int syncPrintf(const char *format, ...);
 void dumbSleep(int delay);
 
-/**
- * USER7.CPP
- *
- * Creates the maximum amount of threads possible within the system memory
- * and frees them, hoping nothing will go wrong.
- */
-#define nullptr 0
-class OveruseThread : public Thread {
-    public:
-        OveruseThread() : Thread(1, 20) {}
-        virtual void run() {
-            syncPrintf("This should not happen.\n");
-        }
-        ~OveruseThread() {
-            waitToComplete();
-        }
-};
+PREPAREENTRY(9,1);
+
+Semaphore* mutex = 0;
+Semaphore* sleepSem = 0;
 
 void tick() {}
 
-Thread* threads[500];
+
+class Znak : public Thread
+{
+public:
+	Znak(char znak, int n) : Thread(), znak(znak), n(n) {}
+	virtual ~Znak() { waitToComplete(); }
+
+	void run()
+	{
+		// for (long i = 0; i < 100000; i++)
+		for (int i = 0; i < n; i++)
+		{
+			if (mutex->wait(1)) {
+				cout << znak;
+				mutex->signal();
+			}
+
+			// for (int j = 0; j < 10000; j++)
+				// for (int k = 0; k < 10000; k++);
+			Time sleepTime = 2 + rand() % 8;
+			sleepSem->wait(sleepTime);
+
+			// dispatch();
+		}
+
+		if (mutex->wait(1)) {
+			cout << endl << znak << " finished" << endl;
+			mutex->signal();
+		}
+	}
+
+private:
+	char znak;
+	int n;
+
+};
+
+
+class Key : public Thread {
+public:
+	Key(int n) : Thread(), n(n) {}
+	virtual ~Key() { waitToComplete(); }
+
+	void run() {
+		Event e(9);
+
+		for (int i = 0; i < n; i++) {
+			if (mutex->wait(1)) {
+				cout << endl << "key waiting " << (i + 1) << endl;
+				mutex->signal();
+			}
+
+			e.wait();
+
+			if (mutex->wait(1)) {
+				cout << endl << "key continue " << (i + 1) << endl;
+				mutex->signal();
+			}
+
+			sleepSem->wait(5);
+		}
+
+		if (mutex->wait(1)) {
+			cout << endl << "key finished" << endl;
+			mutex->signal();
+		}
+	}
+
+private:
+	int n;
+
+};
+
 
 int userMain(int argc, char* argv[]) {
-    (void) argc;
-    (void) argv;
-    unsigned i = 0;
-    for (; i < 500; ++i) {
-        syncPrintf("Creating %d\n", i);
-        lock
-        threads[i] = new OveruseThread();
-        unlock
-        if (threads[i] == nullptr || threads[i]->getId() == -1) {
-            syncPrintf("Failed at index %d\n", i);
-            if (threads[i] != nullptr) {
-                lock
-                delete threads[i];
-                unlock
-            }
-            break;
-        }
-    }
-    for (unsigned j = 0; j < i; ++j) {
-        lock
-        delete threads[j];
-        unlock
-    }
-    syncPrintf("Done\n");
-    return 0;
+	mutex = new Semaphore(1);
+	sleepSem = new Semaphore(0);
+
+	Znak* a = new Znak('a', 10);
+	Znak* b = new Znak('b', 15);
+	Znak* c = new Znak('c', 20);
+	Key* k = new Key(5);
+
+	a->start();
+	b->start();
+	c->start();
+	k->start();
+
+	delete a;
+	delete b;
+	delete c;
+	delete k;
+
+	if (mutex->wait(1)) {
+		cout << endl << "userMain finished" << endl;
+		mutex->signal();
+	}
+
+	delete sleepSem;
+	delete mutex;
+
+	return 0;
 }
+

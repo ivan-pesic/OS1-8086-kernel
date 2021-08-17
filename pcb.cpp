@@ -137,7 +137,7 @@ void PCB::wrapper() {
 void PCB::block() {
 	lock
 	state = PCB::BLOCKED;
-	unlock;
+	unlock
 }
 
 void PCB::unblock() {

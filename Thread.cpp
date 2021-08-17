@@ -1,6 +1,7 @@
 #include "Thread.h"
 #include "system.h"
 #include "pcb.h"
+#include "ASSERT.H"
 
 Thread::Thread(StackSize stackSize, Time timeSlice) {
 	lock
@@ -46,6 +47,7 @@ Thread* Thread::getThreadById(ID id) {
 
 // sinhrona promena konteksta
 void dispatch(){
+	assert(System::lock_counter == 0);
 	disable_interrupts
 	System::context_switch_on_demand = 1;
 	System::timer();

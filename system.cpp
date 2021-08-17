@@ -36,7 +36,7 @@ unsigned tbp = 0;
 // definition of lists of all PCBs and all Semaphores
 List System::all_PCBs;
 List System::all_semaphores;
-
+IVTEntry* System::entries[256] = {0};
 // prekidna rutina
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
