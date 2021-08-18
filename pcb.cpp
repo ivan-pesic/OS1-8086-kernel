@@ -73,7 +73,7 @@ PCB::~PCB() {
 	lock
 	System::all_PCBs.remove_element(this);
 	if(stack)
-		delete stack;
+		delete[] stack;
 	stack = 0;
 	PCB::live_PCBs--;
 	unlock

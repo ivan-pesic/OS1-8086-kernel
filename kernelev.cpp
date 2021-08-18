@@ -15,17 +15,17 @@ KernelEv::KernelEv(IVTNo ivt_number) {
 	this->ivt_number = ivt_number;
 	this->creator_pcb = (PCB*)(System::running);
 	this->value = 0;
+	this->blocked = 0;
+	disable_interrupts
 	System::entries[ivt_number]->kernel_event = this;
+	enable_interrupts
 	unlock
 }
 
 KernelEv::~KernelEv() {
 	signal();
 	disable_interrupts
-	if(creator_pcb->state == PCB::BLOCKED)
-		creator_pcb->unblock();
 	System::entries[ivt_number]->kernel_event = 0;
-
 	enable_interrupts
 }
 
@@ -37,7 +37,7 @@ void KernelEv::wait() {
 	}
 	if(value == 0) {
 		creator_pcb->block();
-		blocked = creator_pcb;
+		blocked = 1;
 		unlock
 		dispatch();
 

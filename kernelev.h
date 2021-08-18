@@ -14,9 +14,9 @@ typedef unsigned char IVTNo;
 
 class KernelEv {
 	int value;
+	int blocked;
 	IVTNo ivt_number;
 	PCB* creator_pcb;
-	PCB* blocked;
 public:
 	KernelEv(IVTNo ivt_number);
 	~KernelEv();
