@@ -41,7 +41,7 @@ IVTEntry* System::entries[256] = {0};
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
 		(*System::old_isr)();
-		if(!sem_locked) {
+		if(!sem_locked && !in_locked_section) {
 			while(System::sem_artificial_ticks >= 0) {
 				tick();
 				KernelSem::tick();
