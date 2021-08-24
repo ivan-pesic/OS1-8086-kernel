@@ -17,6 +17,7 @@ class IVTEntry {
 	IVTNo ivt_number;
 	KernelEv* kernel_event;
 	p_interrupt new_interrupt_routine;
+	int flag;
 	friend class KernelEv;
 public:
 	IVTEntry(IVTNo ivt_number, p_interrupt new_interrupt_routine);

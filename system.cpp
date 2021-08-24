@@ -60,7 +60,7 @@ void interrupt System::timer(...){
 
 	if ((System::time == 0 && !in_locked_section) || System::context_switch_on_demand) {
 		System::context_switch_on_demand = 0;
-		//System::lock_flag = 0;
+		System::lock_flag = 0;
 
 		asm {
 			// cuva sp
@@ -94,9 +94,9 @@ void interrupt System::timer(...){
 			mov bp, tbp
 		}
 	}
-	//else if(System::time == 0 && in_locked_section) {
-	//	System::lock_flag = 1;
-	//}
+	else if(System::time == 0 && in_locked_section) {
+		System::lock_flag = 1;
+	}
 }
 
 /*void System::dispatch(){ // sinhrona promena konteksta
@@ -169,7 +169,7 @@ void System::restore(){
 */
 	//System::all_PCBs.print_list();
 	//System::all_semaphores.print_list();
-
+/*
 	disable_interrupts
 	// check print
 	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
@@ -178,7 +178,7 @@ void System::restore(){
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
 	enable_interrupts
-
+*/
 //	unlock
 
 }

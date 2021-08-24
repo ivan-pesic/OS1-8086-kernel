@@ -18,6 +18,7 @@ KernelEv::KernelEv(IVTNo ivt_number) {
 	this->blocked = 0;
 	disable_interrupts
 	System::entries[ivt_number]->kernel_event = this;
+	System::entries[ivt_number]->flag = 1;
 	enable_interrupts
 	unlock
 }

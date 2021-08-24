@@ -15,6 +15,7 @@ IVTEntry::IVTEntry(IVTNo ivt_number, p_interrupt new_interrupt_routine) {
 	this->ivt_number = ivt_number;
 	this->new_interrupt_routine = new_interrupt_routine;
 	this->kernel_event = 0;
+	this->flag = 0;
 	System::entries[ivt_number] = this;
 
 	disable_interrupts
@@ -26,7 +27,19 @@ IVTEntry::IVTEntry(IVTNo ivt_number, p_interrupt new_interrupt_routine) {
 }
 
 IVTEntry::~IVTEntry() {
-	(*old_interrupt_routine)();
+	/*
+	 * For some strange reason, I have to call old routine in this
+	 * destructor in order to provide well functioning of the system
+	 * when escape is pressed more than once.
+	 *
+	 * Flag is used to register that event has been set to IVTEntry
+	 * instance. This is not necessary for proper functioning of the system,
+	 * but at least it's not writing some strange French 'e symbol when
+	 * public test starts without parameters.
+	 *
+	 */
+	if(flag)
+		(*old_interrupt_routine)();
 	disable_interrupts
 	setvect(ivt_number, old_interrupt_routine);
 	kernel_event = 0;
