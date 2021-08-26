@@ -10,12 +10,21 @@
 #include "list.h"
 #include "dos.h"
 #include "SCHEDULE.H"
+#include "Semaphor.h"
 
 ID PCB::global_id = 0;
 int PCB::live_PCBs = 0;
 
 PCB::PCB() {
 	lock
+
+#ifdef FORK_IMPL
+	//this->number_of_children = 0;
+	this->children_list = 0;
+	this->parent = 0;
+	this->parent_sem = 0;
+#endif
+
 	pcb_id = ++global_id;
 	time_slice = defaultTimeSlice;
 	unblocked_by_time = 0;
@@ -35,6 +44,14 @@ PCB::PCB() {
 
 PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 	lock
+
+#ifdef FORK_IMPL
+	//this->number_of_children = 0;
+	this->children_list = 0;
+	this->parent = 0;
+	this->parent_sem = 0;
+#endif
+
 	this->my_thread = my_thread;
 	this->time_slice = time_slice;
 	pcb_id = ++global_id;
@@ -48,23 +65,32 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 
 	unsigned real_stack_size = stack_size / sizeof(unsigned);
 	stack = new unsigned[real_stack_size];
-	// setovanje I flega u pocetnom PSW-u za nit
-	stack[real_stack_size - 1] = 0x200;
-	// postavljanje adrese funkcije koju ce nit da izvrsava
-	stack[real_stack_size - 2] = FP_SEG(PCB::wrapper);
-	stack[real_stack_size - 3] = FP_OFF(PCB::wrapper);
-	//svi sacuvani registri pri ulasku u interrupt rutinu
-	sp = FP_OFF(stack + real_stack_size - 12);
-	ss = FP_SEG(stack + real_stack_size - 12);
-	bp = sp;
+	if(stack) {
+		// setovanje I flega u pocetnom PSW-u za nit
+		stack[real_stack_size - 1] = 0x200;
+		// postavljanje adrese funkcije koju ce nit da izvrsava
+		stack[real_stack_size - 2] = FP_SEG(PCB::wrapper);
+		stack[real_stack_size - 3] = FP_OFF(PCB::wrapper);
+		//svi sacuvani registri pri ulasku u interrupt rutinu
+		sp = FP_OFF(stack + real_stack_size - 12);
+		ss = FP_SEG(stack + real_stack_size - 12);
+		bp = sp;
 
-	this->stack_size = stack_size;
-	state = PCB::NEW;
-	System::all_PCBs.push_back(this);
-	// for testing
-	PCB::live_PCBs++;
-	//disable_interrupts
-	//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
+#ifdef FORK_IMPL
+		stack[real_stack_size - 12] = 0;
+#endif
+
+		this->stack_size = stack_size;
+		state = PCB::NEW;
+		System::all_PCBs.push_back(this);
+		// for testing
+		PCB::live_PCBs++;
+		//disable_interrupts
+		//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
+	}
+	else {
+		this->stack_size = 0;
+	}
 	//enable_interrupts
 	unlock
 }
@@ -74,6 +100,12 @@ PCB::~PCB() {
 	System::all_PCBs.remove_element(this);
 	if(stack)
 		delete[] stack;
+#ifdef FORK_IMPL
+	if(children_list)
+		delete children_list;
+	if(parent_sem)
+		delete parent_sem;
+#endif
 	stack = 0;
 	PCB::live_PCBs--;
 	unlock
@@ -123,6 +155,7 @@ Thread* PCB::get_thread_by_id(ID id) {
 
 void PCB::wrapper() {
 	System::running->my_thread->run();
+#ifndef FORK_IMPL
 	lock
 	PCB* tmp = (PCB*)(System::running->blocked_PCBs.pop_front());
 	while(tmp) {
@@ -132,6 +165,9 @@ void PCB::wrapper() {
 	System::running->state = PCB::FINISHED;
 	unlock
 	dispatch();
+#else
+	System::running->exit();
+#endif
 }
 
 void PCB::block() {
@@ -150,3 +186,38 @@ void PCB::unblock() {
 PCB* PCB::get_idle_PCB() {
 	return System::idle_thread->myPCB;
 }
+
+// fork methods
+#ifdef FORK_IMPL
+
+void PCB::exit() {
+	lock
+	PCB* tmp = (PCB*)(blocked_PCBs.pop_front());
+	while(tmp) {
+		tmp->unblock();
+		tmp = (PCB*)(blocked_PCBs.pop_front());
+	}
+
+	state = PCB::FINISHED;
+
+	if(children_list) {
+		tmp = (PCB*)(children_list->pop_front());
+		while(tmp) {
+			tmp->parent = 0;
+			tmp = (PCB*)(children_list->pop_front());
+		}
+	}
+	if(parent) {
+		parent->children_list->remove_element(this);
+		if(parent->children_list->empty())
+			parent->parent_sem->signal();
+	}
+	unlock
+	dispatch();
+}
+void PCB::wait_for_fork_children() {
+	if(children_list && !children_list->empty()) {
+		parent_sem->wait(0);
+	}
+}
+#endif
