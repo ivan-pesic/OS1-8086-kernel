@@ -53,12 +53,9 @@ public:
 
 	//for fork
 #ifdef FORK_IMPL
-	//int number_of_children;
 	List* children_list;
 	PCB* parent;
 	Semaphore* parent_sem;
-
-	//ID fork();
 	void exit();
 	void wait_for_fork_children();
 #endif

@@ -65,32 +65,42 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 
 	unsigned real_stack_size = stack_size / sizeof(unsigned);
 	stack = new unsigned[real_stack_size];
-	if(stack) {
-		// setovanje I flega u pocetnom PSW-u za nit
-		stack[real_stack_size - 1] = 0x200;
-		// postavljanje adrese funkcije koju ce nit da izvrsava
-		stack[real_stack_size - 2] = FP_SEG(PCB::wrapper);
-		stack[real_stack_size - 3] = FP_OFF(PCB::wrapper);
-		//svi sacuvani registri pri ulasku u interrupt rutinu
-		sp = FP_OFF(stack + real_stack_size - 12);
-		ss = FP_SEG(stack + real_stack_size - 12);
-		bp = sp;
+
+	if(!stack) {
+		--global_id;
+		unlock
+		return;
+	}
+
+	// setovanje I flega u pocetnom PSW-u za nit
+	stack[real_stack_size - 1] = 0x200;
+	// postavljanje adrese funkcije koju ce nit da izvrsava
+	stack[real_stack_size - 2] = FP_SEG(PCB::wrapper);
+	stack[real_stack_size - 3] = FP_OFF(PCB::wrapper);
+	//svi sacuvani registri pri ulasku u interrupt rutinu
+	sp = FP_OFF(stack + real_stack_size - 12);
+	ss = FP_SEG(stack + real_stack_size - 12);
+	bp = sp;
 
 #ifdef FORK_IMPL
-		stack[real_stack_size - 12] = 0;
+	stack[real_stack_size - 12] = 0;
 #endif
 
-		this->stack_size = stack_size;
-		state = PCB::NEW;
-		System::all_PCBs.push_back(this);
-		// for testing
-		PCB::live_PCBs++;
-		//disable_interrupts
-		//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
+	this->stack_size = stack_size;
+	state = PCB::NEW;
+
+	if(!System::all_PCBs.push_back(this)) {
+		--global_id;
+		delete[] stack;
+		stack = 0;
+		unlock
+		return;
 	}
-	else {
-		this->stack_size = 0;
-	}
+
+	// for testing
+	PCB::live_PCBs++;
+	//disable_interrupts
+	//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
 	//enable_interrupts
 	unlock
 }
@@ -105,6 +115,9 @@ PCB::~PCB() {
 		delete children_list;
 	if(parent_sem)
 		delete parent_sem;
+
+	children_list = 0;
+	parent_sem = 0;
 #endif
 	stack = 0;
 	PCB::live_PCBs--;
