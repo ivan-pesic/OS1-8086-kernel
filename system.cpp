@@ -73,7 +73,6 @@ void interrupt System::timer(...){
 		System::running->sp = tsp;
 		System::running->ss = tss;
 		System::running->bp = tbp;
-//		System::running->lock_cnt = System::lock_counter;
 
 		if(System::running->state == PCB::READY)
 			Scheduler::put((PCB*)System::running);
@@ -86,7 +85,6 @@ void interrupt System::timer(...){
 		tsp = System::running->sp;
 		tss = System::running->ss;
 		tbp = System::running->bp;
-//		System::lock_counter = System::running->lock_cnt;
 		System::time = running->time_slice;
 
 		asm {

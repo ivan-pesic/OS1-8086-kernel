@@ -44,7 +44,6 @@ public:
 	unsigned finished;
 	Time time_slice;
 	StackSize stack_size;
-	int lock_cnt;
 	int unblocked_by_time;
 	Thread* my_thread;
 	State state;

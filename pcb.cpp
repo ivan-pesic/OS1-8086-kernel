@@ -28,7 +28,6 @@ PCB::PCB() {
 	pcb_id = ++global_id;
 	time_slice = defaultTimeSlice;
 	unblocked_by_time = 0;
-	lock_cnt = System::lock_counter;
 	state = PCB::READY;
 	stack = 0;
 	stack_size = 0;
@@ -58,7 +57,6 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 	unblocked_by_time = 0;
 	if(time_slice == 0)
 		this->time_slice = -1;
-	lock_cnt = 0;
 
 	if(stack_size < min_stack_size) stack_size = min_stack_size;
 	if(stack_size > max_stack_size) stack_size = max_stack_size;
