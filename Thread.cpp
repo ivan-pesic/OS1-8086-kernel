@@ -61,32 +61,32 @@ void dispatch(){
 
 volatile PCB* parent_PCB, *child_PCB;
 volatile Thread* child_thread;
-volatile unsigned curr_bp, curr_ss, curr_sp, child_offset, parent_offset, relative_offset;
+volatile unsigned parent_bp, parent_ss, parent_sp, child_offset, parent_offset, relative_offset;
 volatile unsigned* child_curr_bp, *parent_curr_bp;
 
 void interrupt copy_and_adjust_stack() {
 	memcpy(child_PCB->stack, parent_PCB->stack, parent_PCB->stack_size);
 
 	asm {
-		mov curr_bp, bp
-		mov curr_ss, ss
-		mov curr_sp, sp
+		mov parent_bp, bp
+		mov parent_ss, ss
+		mov parent_sp, sp
 	}
 
 	relative_offset = FP_OFF(parent_PCB->stack) - FP_OFF(child_PCB->stack);
 
 	child_PCB->ss = FP_SEG(child_PCB->stack);
-	child_PCB->bp = curr_bp - relative_offset;
-	child_PCB->sp = curr_sp - relative_offset;
+	child_PCB->bp = parent_bp - relative_offset;
+	child_PCB->sp = parent_sp - relative_offset;
 
-	parent_offset = curr_bp;
+	parent_offset = parent_bp;
 	child_offset = child_PCB->bp;
 
-	parent_curr_bp = (unsigned*)(MK_FP(curr_ss, parent_offset));
+	parent_curr_bp = (unsigned*)(MK_FP(parent_ss, parent_offset));
 	child_curr_bp = (unsigned*)(MK_FP(child_PCB->ss, child_offset));
 
 	for(; (*parent_curr_bp) != 0; parent_offset = *parent_curr_bp, child_offset = *child_curr_bp) {
-		parent_curr_bp = (unsigned*)(MK_FP(curr_ss, parent_offset));
+		parent_curr_bp = (unsigned*)(MK_FP(parent_ss, parent_offset));
 		child_curr_bp = (unsigned*)(MK_FP(child_PCB->ss, child_offset));
 		*child_curr_bp = *parent_curr_bp - relative_offset;
 	}
