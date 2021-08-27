@@ -32,11 +32,11 @@ public:
 
 	void* pop_front();
 	void* pop_back();
-	void push_front(void* data);
-	void push_back(void* data);
-	void insert_before_current(void* data);
-	void insert_after_current(void* data);
-	void remove_element(void* data);
+	int push_front(void* data);
+	int push_back(void* data);
+	int insert_before_current(void* data);
+	int insert_after_current(void* data);
+	int remove_element(void* data);
 
 	int empty();
 	int size_of_list() const { return size; }

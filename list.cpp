@@ -103,9 +103,13 @@ void* List::pop_back() {
 	return data;
 }
 
-void List::push_front(void* data) {
+int List::push_front(void* data) {
 	lock
 	Node* new_node = new Node(data);
+	if(!new_node) {
+		unlock
+		return 0;
+	}
 	size++;
 	new_node->next = head;
 	if (!tail) {
@@ -116,11 +120,16 @@ void List::push_front(void* data) {
 	}
 	head = new_node;
 	unlock
+	return 1;
 }
 
-void List::push_back(void* data) {
+int List::push_back(void* data) {
 	lock
 	Node* new_node = new Node(data);
+	if(!new_node) {
+		unlock
+		return 0;
+	}
 	size++;
 	new_node->prev = tail;
 	if (!head) {
@@ -131,15 +140,20 @@ void List::push_back(void* data) {
 	}
 	tail = new_node;
 	unlock
+	return 1;
 }
 
-void List::insert_before_current(void* data) {
+int List::insert_before_current(void* data) {
 	lock
 	if (!current) {
 		unlock
-		return;
+		return 0;
 	}
 	Node* new_node = new Node(data);
+	if(!new_node) {
+		unlock
+		return 0;
+	}
 	size++;
 	if (!current->prev) {
 		current->prev = new_node;
@@ -153,15 +167,20 @@ void List::insert_before_current(void* data) {
 		new_node->prev->next = new_node;
 	}
 	unlock
+	return 1;
 }
 
-void List::insert_after_current(void* data) {
+int List::insert_after_current(void* data) {
 	lock
 	if (!current) {
 		unlock
-		return;
+		return 0;
 	}
 	Node* new_node = new Node(data);
+	if(!new_node) {
+		unlock
+		return 0;
+	}
 	size++;
 	if (!current->next) {
 		current->next = new_node;
@@ -175,6 +194,7 @@ void List::insert_after_current(void* data) {
 		new_node->next->prev = new_node;
 	}
 	unlock
+	return 1;
 }
 
 int List::empty() {
@@ -224,7 +244,7 @@ List::Node* List::find_element(void* data) {
 	return nullptr;
 }
 
-void List::remove_element(void* data) {
+int List::remove_element(void* data) {
 	lock
 	Node* tmp = find_element(data);
 	if(tmp) {
@@ -246,6 +266,12 @@ void List::remove_element(void* data) {
 			tmp->next->prev = tmp->prev;
 		}
 		delete tmp;
+		unlock
+		return 1;
 	}
-	unlock
+	else {
+		unlock
+		return 0;
+	}
+
 }
