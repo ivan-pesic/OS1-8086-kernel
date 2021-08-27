@@ -101,6 +101,10 @@ ID Thread::fork() {
 	if(parent_PCB->children_list == 0 && parent_PCB->parent_sem == 0) {
 		parent_PCB->children_list = new List();
 		parent_PCB->parent_sem = new Semaphore(0);
+		if(!parent_PCB->children_list || !parent_PCB->parent_sem) {
+			unlock
+			return -1;
+		}
 	}
 
 	child_thread = parent_PCB->my_thread->clone();
