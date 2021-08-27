@@ -85,7 +85,7 @@ void interrupt copy_and_adjust_stack() {
 	parent_curr_bp = (unsigned*)(MK_FP(curr_ss, parent_offset));
 	child_curr_bp = (unsigned*)(MK_FP(child_PCB->ss, child_offset));
 
-	for(; !(*parent_curr_bp); parent_offset = *parent_curr_bp, child_offset = *child_curr_bp) {
+	for(; (*parent_curr_bp) != 0; parent_offset = *parent_curr_bp, child_offset = *child_curr_bp) {
 		parent_curr_bp = (unsigned*)(MK_FP(curr_ss, parent_offset));
 		child_curr_bp = (unsigned*)(MK_FP(child_PCB->ss, child_offset));
 		*child_curr_bp = *parent_curr_bp - relative_offset;
