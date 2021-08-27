@@ -37,7 +37,8 @@ unsigned tbp = 0;
 List System::all_PCBs;
 List System::all_semaphores;
 IVTEntry* System::entries[256] = {0};
-// prekidna rutina
+
+// interrupt routine
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
 		(*System::old_isr)();
@@ -99,14 +100,7 @@ void interrupt System::timer(...){
 	}
 }
 
-/*void System::dispatch(){ // sinhrona promena konteksta
-	disable_interrupts
-	System::context_switch_on_demand = 1;
-	System::timer();
-	enable_interrupts
-}*/
-
-// postavlja novu prekidnu rutinu
+// sets new interrupt routine
 void System::inic(){
 	lock
 
@@ -125,23 +119,12 @@ void System::inic(){
 	unlock
 }
 
-// vraca staru prekidnu rutinu
+// restores old interrupt routine
 void System::restore(){
 
 	disable_interrupts
 	setvect(8, System::old_isr);
 	enable_interrupts
-
-//	lock
-/*
-	disable_interrupts
-	syncPrintf("\n\n\nNumber of nodes remaining: %d", List::number_of_nodes);
-	syncPrintf("\nLock counter: %d", System::lock_counter);
-	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
-	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
-	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
-	enable_interrupts
-*/
 
 	delete System::main_PCB;
 	delete System::idle_thread;
@@ -154,8 +137,7 @@ void System::restore(){
 		if(pcb)
 			delete pcb;
 	}
-*/
-/*
+
 	// deleting remaining semaphores
 	sem_lock
 	while(!System::all_semaphores.empty()) {
@@ -169,16 +151,14 @@ void System::restore(){
 */
 	//System::all_PCBs.print_list();
 	//System::all_semaphores.print_list();
+
 /*
-	disable_interrupts
-	// check print
+	// final check print
 	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
-	enable_interrupts
 */
-//	unlock
 
 }
