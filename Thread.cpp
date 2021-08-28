@@ -108,7 +108,7 @@ ID Thread::fork() {
 	}
 
 	child_thread = parent_PCB->my_thread->clone();
-	if(!child_thread || !child_thread->myPCB || (child_thread->myPCB && !child_thread->myPCB->stack)) {
+	if(!child_thread || !child_thread->myPCB || (child_thread && child_thread->myPCB && !child_thread->myPCB->stack)) {
 		if(child_thread && child_thread->myPCB)
 			delete child_thread;
 		unlock
