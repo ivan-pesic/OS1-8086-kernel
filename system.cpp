@@ -150,13 +150,13 @@ void System::restore(){
 	//System::all_PCBs.print_list();
 	//System::all_semaphores.print_list();
 
-/*
+
 	// final check print
 	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
-*/
+
 
 }
