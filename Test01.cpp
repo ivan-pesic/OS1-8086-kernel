@@ -1,4 +1,4 @@
-#include "Thread.h"
+/*#include "Thread.h"
 #include "Semaphor.h"
 #include <STDLIB.H>
 #include <IOSTREAM.H>
@@ -53,3 +53,4 @@ int userMain(int argc, char* argv[]) {
     t.start();
     return 0;
 }
+*/
