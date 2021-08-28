@@ -49,7 +49,7 @@ Thread* Thread::getThreadById(ID id) {
 // sinhrona promena konteksta
 void dispatch(){
 	disable_interrupts
-	assert(System::lock_counter == 0);
+	//assert(System::lock_counter == 0);
 	System::context_switch_on_demand = 1;
 	System::timer();
 	enable_interrupts
@@ -108,15 +108,19 @@ ID Thread::fork() {
 	}
 
 	child_thread = parent_PCB->my_thread->clone();
-	if(!child_thread || !child_thread->myPCB->stack) {
-		if(child_thread)
+	if(!child_thread || !child_thread->myPCB || (child_thread->myPCB && !child_thread->myPCB->stack)) {
+		if(child_thread && child_thread->myPCB)
 			delete child_thread;
 		unlock
 		return -1;
 	}
 	child_PCB = child_thread->myPCB;
 	child_PCB->parent = (PCB*)parent_PCB;
-	parent_PCB->children_list->push_back((PCB*)child_PCB);
+	if(!parent_PCB->children_list->push_back((PCB*)child_PCB)) {
+		delete child_thread;
+		unlock
+		return -1;
+	}
 
 	copy_and_adjust_stack();
 
