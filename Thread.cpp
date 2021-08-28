@@ -49,7 +49,7 @@ Thread* Thread::getThreadById(ID id) {
 // sinhrona promena konteksta
 void dispatch(){
 	disable_interrupts
-	//assert(System::lock_counter == 0);
+	assert(System::lock_counter == 0);
 	System::context_switch_on_demand = 1;
 	System::timer();
 	enable_interrupts
@@ -77,6 +77,7 @@ void interrupt copy_and_adjust_stack() {
 
 	child_PCB->ss = FP_SEG(child_PCB->stack);
 	child_PCB->bp = parent_bp - relative_offset;
+	// This should not affect anything since function has no parameters but is left here just in case something has to change
 	child_PCB->sp = parent_sp - relative_offset;
 
 	parent_offset = parent_bp;
@@ -108,7 +109,7 @@ ID Thread::fork() {
 	}
 
 	child_thread = parent_PCB->my_thread->clone();
-	if(!child_thread || !child_thread->myPCB || (child_thread && child_thread->myPCB && !child_thread->myPCB->stack)) {
+	if(!child_thread || (child_thread && !child_thread->myPCB) || (child_thread && child_thread->myPCB && !child_thread->myPCB->stack)) {
 		if(child_thread && child_thread->myPCB)
 			delete child_thread;
 		unlock
