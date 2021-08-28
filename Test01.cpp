@@ -1,4 +1,4 @@
-/*#include "Thread.h"
+#include "Thread.h"
 #include "Semaphor.h"
 #include <STDLIB.H>
 #include <IOSTREAM.H>
@@ -7,115 +7,44 @@
 int syncPrintf(const char *format, ...);
 void dumbSleep(int delay);
 
-PREPAREENTRY(9,1);
+class ForkThread : public Thread {
+    public:
+        ForkThread() : Thread(1, 1) {}
+        virtual void run();
+        virtual Thread* clone() const {
+            return new ForkThread();
+        }
+        ~ForkThread() {
+            waitToComplete();
+        }
+        static volatile int failedFork;
+};
 
-Semaphore* mutex = 0;
-Semaphore* sleepSem = 0;
+volatile int ForkThread::failedFork = 0;
+
+void ForkThread::run() {
+    while (!failedFork) {
+        ID forked = fork();
+        if (forked < 0) {
+            syncPrintf("Failed to fork in thread %d!\n", getRunningId());
+            failedFork = 1;
+            break;
+        } else if (forked == 0) {
+            syncPrintf("We are in child %d\n", getRunningId());
+        } else {
+            syncPrintf("Cloned thread: %d\n", forked);
+            dumbSleep(10000);
+        }
+    }
+    waitForForkChildren();
+}
 
 void tick() {}
 
-
-class Znak : public Thread
-{
-public:
-	Znak(char znak, int n) : Thread(), znak(znak), n(n) {}
-	virtual ~Znak() { waitToComplete(); }
-
-	void run()
-	{
-		// for (long i = 0; i < 100000; i++)
-		for (int i = 0; i < n; i++)
-		{
-			if (mutex->wait(1)) {
-				cout << znak;
-				mutex->signal();
-			}
-
-			// for (int j = 0; j < 10000; j++)
-				// for (int k = 0; k < 10000; k++);
-			Time sleepTime = 2 + rand() % 8;
-			sleepSem->wait(sleepTime);
-
-			// dispatch();
-		}
-
-		if (mutex->wait(1)) {
-			cout << endl << znak << " finished" << endl;
-			mutex->signal();
-		}
-	}
-
-private:
-	char znak;
-	int n;
-
-};
-
-
-class Key : public Thread {
-public:
-	Key(int n) : Thread(), n(n) {}
-	virtual ~Key() { waitToComplete(); }
-
-	void run() {
-		Event e(9);
-
-		for (int i = 0; i < n; i++) {
-			if (mutex->wait(1)) {
-				cout << endl << "key waiting " << (i + 1) << endl;
-				mutex->signal();
-			}
-
-			e.wait();
-
-			if (mutex->wait(1)) {
-				cout << endl << "key continue " << (i + 1) << endl;
-				mutex->signal();
-			}
-
-			sleepSem->wait(5);
-		}
-
-		if (mutex->wait(1)) {
-			cout << endl << "key finished" << endl;
-			mutex->signal();
-		}
-	}
-
-private:
-	int n;
-
-};
-
-
 int userMain(int argc, char* argv[]) {
-	mutex = new Semaphore(1);
-	sleepSem = new Semaphore(0);
-
-	Znak* a = new Znak('a', 10);
-	Znak* b = new Znak('b', 15);
-	Znak* c = new Znak('c', 20);
-	Key* k = new Key(5);
-
-	a->start();
-	b->start();
-	c->start();
-	k->start();
-
-	delete a;
-	delete b;
-	delete c;
-	delete k;
-
-	if (mutex->wait(1)) {
-		cout << endl << "userMain finished" << endl;
-		mutex->signal();
-	}
-
-	delete sleepSem;
-	delete mutex;
-
-	return 0;
+    (void) argc;
+    (void) argv;
+    ForkThread t;
+    t.start();
+    return 0;
 }
-
-*/
