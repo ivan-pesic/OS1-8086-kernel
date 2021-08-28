@@ -48,8 +48,8 @@ Thread* Thread::getThreadById(ID id) {
 
 // sinhrona promena konteksta
 void dispatch(){
-	assert(System::lock_counter == 0);
 	disable_interrupts
+	assert(System::lock_counter == 0);
 	System::context_switch_on_demand = 1;
 	System::timer();
 	enable_interrupts
