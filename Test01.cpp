@@ -7,6 +7,11 @@
 int syncPrintf(const char *format, ...);
 void dumbSleep(int delay);
 
+
+#define true 1
+#define false 0
+
+
 class ForkThread : public Thread {
     public:
         ForkThread() : Thread(1, 1) {}
@@ -20,14 +25,14 @@ class ForkThread : public Thread {
         static volatile int failedFork;
 };
 
-volatile int ForkThread::failedFork = 0;
+volatile int ForkThread::failedFork = false;
 
 void ForkThread::run() {
     while (!failedFork) {
         ID forked = fork();
         if (forked < 0) {
             syncPrintf("Failed to fork in thread %d!\n", getRunningId());
-            failedFork = 1;
+            failedFork = true;
             break;
         } else if (forked == 0) {
             syncPrintf("We are in child %d\n", getRunningId());
