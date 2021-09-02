@@ -42,17 +42,7 @@ IVTEntry* System::entries[256] = {0};
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
 		(*System::old_isr)();
-		if(!sem_locked && !in_locked_section) {
-			while(System::sem_artificial_ticks >= 0) {
-				tick();
-				KernelSem::tick();
-				System::sem_artificial_ticks--;
-			}
-			System::sem_artificial_ticks = 0;
-		}
-		else {
-			System::sem_artificial_ticks++;
-		}
+		KernelSem::tick();
 	}
 
 	if(!System::context_switch_on_demand && System::time > 0) {
@@ -128,7 +118,7 @@ void System::restore(){
 	delete System::idle_thread;
 
 
-/*
+	/*
 	// deleting remaining PCBs
 	while(!System::all_PCBs.empty()) {
 		PCB* pcb = (PCB*)(System::all_PCBs.pop_front());
@@ -146,17 +136,18 @@ void System::restore(){
 
 	}
 	sem_unlock
-*/
+	 */
 	//System::all_PCBs.print_list();
 	//System::all_semaphores.print_list();
 
 
 	// final check print
-	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
+/*
+ 	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
-
+*/
 
 }

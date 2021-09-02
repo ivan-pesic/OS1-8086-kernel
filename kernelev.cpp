@@ -28,7 +28,19 @@ KernelEv::~KernelEv() {
 	disable_interrupts
 	System::entries[ivt_number]->kernel_event = 0;
 	enable_interrupts
+	/*
+	signal();
+	disable_interrupts
+	setvect(ivt_number, System::entries[ivt_number]->old_interrupt_routine);
+	System::entries[ivt_number]->kernel_event = 0;
+	 */
 }
+
+/*
+ * Idea for implementing wait and signal found in this student's guide
+ * written 6 years ago:
+ * https://drive.google.com/file/d/1FfSk-shJZ2_ZyA9GGEC8Pp3KEYH94zlT/view
+ */
 
 void KernelEv::wait() {
 	lock

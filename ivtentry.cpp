@@ -37,6 +37,7 @@ IVTEntry::~IVTEntry() {
 	 * but at least it's not writing some strange French 'e symbol when
 	 * public test starts without parameters.
 	 *
+	 * Comment if.
 	 */
 	if(flag)
 		(*old_interrupt_routine)();
