@@ -221,7 +221,8 @@ void PCB::exit() {
 	if(parent) {
 		parent->children_list->remove_element(this);
 		if(parent->children_list->empty())
-			parent->parent_sem->signal();
+			if(parent->parent_sem->val() < 0) // comment
+				parent->parent_sem->signal();
 	}
 	unlock
 	dispatch();
