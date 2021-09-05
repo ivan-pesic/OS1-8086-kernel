@@ -12,7 +12,7 @@
 #include "intLock.h"
 #include <event.h>
 
-PREPAREENTRY(9,0);
+PREPAREENTRY(9,1);
   
 //---------------------------------------------------------------------------//
 //  Podeseno za qwerty tastature
@@ -40,14 +40,14 @@ KeyboardEvent::KeyboardEvent(BoundedBuffer* bb) : Thread(), myBuffer(bb)
 void KeyboardEvent::run()
 {
 	intLock
-	Event event9(9);
+//	Event event9(9);
 	cout<<"KeyebordListener started!"<<endl;
 	intUnlock
 	char scancode, status, znak; 
 	
 	while (!theEnd) {
       
-		event9.wait();
+//		event9.wait();
 		do{
 			status = inportb(0x64); // ocitava statusni reg. sa 64h
 

@@ -49,12 +49,51 @@ IVTEntry::~IVTEntry() {
 }
 
 void IVTEntry::signal() {
-	if(kernel_event)
-		kernel_event->signal();
+	lock
+	if(!list_of_events.empty()) {
+		list_of_events.to_front();
+		while(list_of_events.has_current()) {
+			list_elem* elem = (list_elem*)(list_of_events.get_current_data());
+			elem->event->signal();
+			list_of_events.to_next();
+		}
+	}
+	unlock
 }
 
 void IVTEntry::call_old_routine() {
 	lock
 	(*old_interrupt_routine)();
+	unlock
+}
+
+void IVTEntry::insert_in_list(KernelEv* kernel_event, int priority) {
+	lock
+	if(list_of_events.empty()) {
+		list_of_events.push_back(new list_elem(kernel_event, priority));
+		unlock
+		return;
+	}
+	list_of_events.to_front();
+	while(list_of_events.has_current()) {
+		if(priority < ((list_elem*)(list_of_events.get_current_data()))->priority) {
+			list_of_events.insert_before_current(new list_elem(kernel_event, priority));
+			break;
+		}
+		list_of_events.to_next();
+	}
+	list_of_events.push_back(new list_elem(kernel_event, priority));
+	unlock
+}
+void IVTEntry::remove_from_list(KernelEv* kernel_event) {
+	lock
+	list_of_events.to_front();
+	while(list_of_events.has_current()) {
+		if(kernel_event == ((list_elem*)(list_of_events.get_current_data()))->event) {
+			list_of_events.remove_element((list_of_events.get_current_data()));
+			break;
+		}
+		list_of_events.to_next();
+	}
 	unlock
 }

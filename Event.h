@@ -24,7 +24,7 @@ class KernelEv;
 
 class Event {
 public:
-	Event (IVTNo ivtNo);
+	Event (IVTNo ivtNo, int priority);
 	~Event ();
 
 	void wait  ();

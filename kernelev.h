@@ -18,7 +18,7 @@ class KernelEv {
 	IVTNo ivt_number;
 	PCB* creator_pcb;
 public:
-	KernelEv(IVTNo ivt_number);
+	KernelEv(IVTNo ivt_number, int priority);
 	~KernelEv();
 	void wait();
 	void signal();

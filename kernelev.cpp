@@ -10,14 +10,14 @@
 #include "pcb.h"
 #include "ivtentry.h"
 
-KernelEv::KernelEv(IVTNo ivt_number) {
+KernelEv::KernelEv(IVTNo ivt_number, int priority) {
 	lock
 	this->ivt_number = ivt_number;
 	this->creator_pcb = (PCB*)(System::running);
 	this->value = 0;
 	this->blocked = 0;
 	disable_interrupts
-	System::entries[ivt_number]->kernel_event = this;
+	System::entries[ivt_number]->insert_in_list(this, priority);
 	System::entries[ivt_number]->flag = 1;
 	enable_interrupts
 	unlock
@@ -26,6 +26,7 @@ KernelEv::KernelEv(IVTNo ivt_number) {
 KernelEv::~KernelEv() {
 	signal();
 	disable_interrupts
+	System::entries[ivt_number]->remove_from_list(this);
 	System::entries[ivt_number]->kernel_event = 0;
 	enable_interrupts
 	/*

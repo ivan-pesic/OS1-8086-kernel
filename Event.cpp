@@ -8,10 +8,10 @@
 #include "Event.h"
 #include "system.h"
 #include "kernelev.h"
-
-Event::Event(IVTNo ivtNo) {
+#include "pcb.h"
+Event::Event(IVTNo ivtNo, int priority) {
 	lock
-	myImpl = new KernelEv(ivtNo);
+	myImpl = new KernelEv(ivtNo, priority);
 	unlock
 }
 
@@ -23,10 +23,13 @@ Event::~Event() {
 	}
 	unlock
 }
-
+#include "STDIO.H"
 void Event::wait() {
-	if(myImpl)
-		myImpl->wait();
+	if(myImpl) {
+		printf("\nBLOCKED - THREAD ID = %d", System::running->get_id());
+ 		myImpl->wait();
+	}
+
 }
 
 void Event::signal() {
