@@ -26,7 +26,7 @@ Event::~Event() {
 #include "STDIO.H"
 void Event::wait() {
 	if(myImpl) {
-		printf("\nBLOCKED - THREAD ID = %d", System::running->get_id());
+		printf("BLOCKED - THREAD ID = %d\n", System::running->get_id());
  		myImpl->wait();
 	}
 

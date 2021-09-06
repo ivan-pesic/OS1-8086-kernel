@@ -145,7 +145,7 @@ int userMain(int argc, char* argv[]) {
             intUnlock
 
             waiter.wait(rand()%10+1);
-			//waiter.wait(10);
+			//waiter.wait(2);
         }
     }
     Thread::waitForForkChildren();
