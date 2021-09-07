@@ -93,7 +93,7 @@ void interrupt copy_and_adjust_stack() {
 	}
 	*child_curr_bp = 0;
 
-	child_PCB->my_thread->start();
+	//child_PCB->my_thread->start();
 }
 
 ID Thread::fork() {
@@ -126,8 +126,11 @@ ID Thread::fork() {
 	copy_and_adjust_stack();
 
 	if(System::running == parent_PCB) {
+		ID child_id = child_thread->getId();
+		parent_PCB->new_child = child_thread->myPCB;
 		unlock
-		return child_thread->getId();
+		dispatch();
+		return child_id;
 	}
 	else
 		return 0;

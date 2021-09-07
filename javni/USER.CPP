@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------//
 //  Otkomentarisati ukoliko se testira fork
 //---------------------------------------------------------------------------//
- #define FORK
+#define FORK
 //---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
@@ -36,7 +36,7 @@ class Producer : public Thread {
 public:
 	Producer (BoundedBuffer* bb, char y, Time time_slice);
 	virtual ~Producer() {waitToComplete(); }
-    Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
+	Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
 protected:
 	virtual void run ();
 	char produce() {return x;}; // Produce an item
@@ -79,8 +79,8 @@ void tick(){
 
 Producer::Producer (BoundedBuffer* bb, char y, Time time_slice) 
 : Thread(defaultStackSize, time_slice),myBuffer(bb), x(y), sleep(0), time_slice_clone(time_slice) {}
-	
-	void Producer::run () {
+
+void Producer::run () {
 	while(!theEnd) {
 		char d = produce();
 		myBuffer->append(d);
@@ -98,7 +98,7 @@ void Consumer::consume(char p) {
 } // Consume an item
 
 void Consumer::run () {
-		
+
 	int i = 0;
 	while(!theEnd) {
 		char d = myBuffer->take();
@@ -108,32 +108,71 @@ void Consumer::run () {
 			i = 0;
 		}else for(int j=0;j<200;j++);
 	}
- 
+
 	intLock
 	cout<<endl<<"ESC pressed - empty the buffer!"<<endl;
 	intUnlock
-	
+
 	while (myBuffer->fullCount()){
 		char d = myBuffer->take();
 		consume(d);
 		dispatch();
 	}
-	
-	
+
+
 	intLock
 	cout<<endl<<"Happy End"<<endl;
 	intUnlock
 }
 
+class testThread : public Thread {
+public:
+	testThread() : Thread() {
+		this->start();
+	}
+	void run() {
+
+		for(long i = 0; i < 100000; i++) {
+			for(long j = 0; j < 10000; j++);
+		}
+		intLock
+		cout << "testThread: " << getId() << endl;
+		intUnlock
+	}
+	~testThread() { waitToComplete(); }
+};
 
 
 
+int userMain (int argc, char* argv[]) {
+	testThread threads[20];
+	int i;
 
-int userMain (int argc, char* argv[])
-{
+	for(i = 0; i < 50; i++) {
+		int res = Thread::fork();
+		if(res != -1) {
+			if(res == 0) {
+				intLock
+				cout << "CHILD! " << Thread::getRunningId() << endl;
+				intUnlock
+				Thread::exit();
+			}
+			else {
+				intLock
+				cout << "PARENT! " << Thread::getRunningId() << endl;
+				intUnlock
+				Thread::waitForForkChildren();
+			}
+		}
+	}
+	for(i = 0; i < 20; i++) {
+		threads[i].waitToComplete();
+	}
+}
+/*{
 	BoundedBuffer *buff;
 	Consumer *con;
-	
+
 	intLock
 	if(argc <2){
 		cout<<"Invalid input!"<<endl;
@@ -144,7 +183,7 @@ int userMain (int argc, char* argv[])
 	N = atoi(argv[2]);
 	//N = N>19 ? 19 : N;
 	TIME_SLICE = atoi(argv[3]);
-	
+
 	if(buffSize<N) {
 		cout<<"Number of Produsers is larger then Buffer size!"<<endl;
 		intUnlock
@@ -155,21 +194,21 @@ int userMain (int argc, char* argv[])
 	Producer **pro = new Producer*[N];
 	KeyboardEvent* kev;
 	int i;
-	
+
 	con = new Consumer(buff);
-	  
+
 	con->start();
 
 	for (i=0; i<N; i++){
 		pro[i] = new Producer(buff,'0'+i, TIME_SLICE);
 		pro[i]->start();
 	}
-  
+
 	kev = new KeyboardEvent(buff);
 	intUnlock
-	
+
 	kev->start();
-		
+
 	for (i=0; i<N; i++){
 		delete pro[i];
 	}  
@@ -187,7 +226,7 @@ int userMain (int argc, char* argv[])
 			intLock
 			cout<<"Child created!"<<endl;
 			intUnlock
-			*pData = value;
+ *pData = value;
 			data = value + 1;
 			intLock
 			cout<<"Child finished!"<<endl;
@@ -206,5 +245,5 @@ int userMain (int argc, char* argv[])
 	cout<<"userMain finished!"<<endl;
 	intUnlock
 	return 0;
-}
+}*/
 //---------------------------------------------------------------------------//

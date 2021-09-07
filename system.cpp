@@ -37,7 +37,7 @@ unsigned tbp = 0;
 List System::all_PCBs;
 List System::all_semaphores;
 IVTEntry* System::entries[256] = {0};
-
+#include "STDIO.H"
 // interrupt routine
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
@@ -66,12 +66,40 @@ void interrupt System::timer(...){
 
 		if(System::running->state == PCB::READY)
 			Scheduler::put((PCB*)System::running);
-
-		System::running = Scheduler::get();
-		if(System::running == 0) {
-			//syncPrintf("\nU IDLE!");
-			System::running = System::idle_PCB;
+		if(System::running->new_child) {
+			PCB* old_running = (PCB*)System::running;
+			System::running = System::running->new_child;
+			old_running->new_child = 0;
+			System::running->state = PCB::READY;
 		}
+		else {
+			System::running = Scheduler::get();
+			if(System::running == 0) {
+	//			printf("\nU IDLE!");
+				System::running = System::idle_PCB;
+			}
+			else if(System::running->children_list && !System::running->children_list->empty()) {
+				List* parents = new List();
+				parents->push_back((PCB*)System::running);
+				int flag = 1;
+				while((System::running = Scheduler::get()) != 0 && flag) {
+					if(System::running->children_list && !System::running->children_list->empty()) {
+						parents->push_back((PCB*)System::running);
+					}
+					else flag = 0;
+//					printf("while1\n");
+				}
+				if(flag) {
+					System::running = (PCB*)(parents->pop_front());
+				}
+				while(!parents->empty()) {
+//					printf("while2\n");
+					Scheduler::put((PCB*)parents->pop_front());
+				}
+				delete parents;
+			}
+		}
+		//printf("ID: %d, %d\n", System::running->pcb_id, System::running->state);
 		tsp = System::running->sp;
 		tss = System::running->ss;
 		tbp = System::running->bp;
@@ -142,12 +170,12 @@ void System::restore(){
 
 
 	// final check print
-/*
+	/*
  	syncPrintf("\nNumber of nodes remaining: %d", List::number_of_nodes);
 	syncPrintf("\nLock counter: %d", System::lock_counter);
 	syncPrintf("\nLive PCBs: %d", PCB::live_PCBs);
 	syncPrintf("\nLive Semaphores: %d", KernelSem::live_semaphores);
 	syncPrintf("\nwaiting_data_counter: %d", KernelSem::waiting_data_counter);
-*/
+	 */
 
 }

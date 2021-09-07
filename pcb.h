@@ -52,6 +52,7 @@ public:
 
 	//for fork
 #ifdef FORK_IMPL
+	PCB* new_child;
 	List* children_list;
 	PCB* parent;
 	Semaphore* parent_sem;

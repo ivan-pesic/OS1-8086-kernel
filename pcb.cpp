@@ -20,6 +20,7 @@ PCB::PCB() {
 
 #ifdef FORK_IMPL
 	//this->number_of_children = 0;
+	this->new_child = 0;
 	this->children_list = 0;
 	this->parent = 0;
 	this->parent_sem = 0;
@@ -46,6 +47,7 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 
 #ifdef FORK_IMPL
 	//this->number_of_children = 0;
+	this->new_child = 0;
 	this->children_list = 0;
 	this->parent = 0;
 	this->parent_sem = 0;
