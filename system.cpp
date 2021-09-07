@@ -66,7 +66,6 @@ void interrupt System::timer(...){
 
 		if(System::running->state == PCB::READY)
 			Scheduler::put((PCB*)System::running);
-
 		System::running = Scheduler::get();
 		if(System::running == 0) {
 			//syncPrintf("\nU IDLE!");

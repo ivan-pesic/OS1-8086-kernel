@@ -13,11 +13,11 @@
 #include "intLock.h"
 #include <event.h>
 #include "semaphor.h"
-
+#include "Barrier.h"
 //---------------------------------------------------------------------------//
 //  Otkomentarisati ukoliko se testira fork
 //---------------------------------------------------------------------------//
- #define FORK
+#define FORK
 //---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
@@ -36,7 +36,7 @@ class Producer : public Thread {
 public:
 	Producer (BoundedBuffer* bb, char y, Time time_slice);
 	virtual ~Producer() {waitToComplete(); }
-    Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
+	Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
 protected:
 	virtual void run ();
 	char produce() {return x;}; // Produce an item
@@ -79,8 +79,8 @@ void tick(){
 
 Producer::Producer (BoundedBuffer* bb, char y, Time time_slice) 
 : Thread(defaultStackSize, time_slice),myBuffer(bb), x(y), sleep(0), time_slice_clone(time_slice) {}
-	
-	void Producer::run () {
+
+void Producer::run () {
 	while(!theEnd) {
 		char d = produce();
 		myBuffer->append(d);
@@ -98,7 +98,7 @@ void Consumer::consume(char p) {
 } // Consume an item
 
 void Consumer::run () {
-		
+
 	int i = 0;
 	while(!theEnd) {
 		char d = myBuffer->take();
@@ -108,103 +108,107 @@ void Consumer::run () {
 			i = 0;
 		}else for(int j=0;j<200;j++);
 	}
- 
+
 	intLock
 	cout<<endl<<"ESC pressed - empty the buffer!"<<endl;
 	intUnlock
-	
+
 	while (myBuffer->fullCount()){
 		char d = myBuffer->take();
 		consume(d);
 		dispatch();
 	}
-	
-	
+
+
 	intLock
 	cout<<endl<<"Happy End"<<endl;
 	intUnlock
 }
 
+Semaphore* sem = 0;
+Barrier* barrier = 0;
+Semaphore* waiter = 0;
+Semaphore* turnA = 0, *turnB = 0;
+class A: public Thread {
+protected:
+	void run() {
+		while(sem == 0 || barrier == 0);
+		while(1) {
+			//turnA->wait(0);
 
+			barrier->open();
 
-
-
-int userMain (int argc, char* argv[])
-{
-	BoundedBuffer *buff;
-	Consumer *con;
-	
-	intLock
-	if(argc <2){
-		cout<<"Invalid input!"<<endl;
-		intUnlock
-		return -1;
-	}
-	int buffSize = atoi(argv[1]);
-	N = atoi(argv[2]);
-	//N = N>19 ? 19 : N;
-	TIME_SLICE = atoi(argv[3]);
-	
-	if(buffSize<N) {
-		cout<<"Number of Produsers is larger then Buffer size!"<<endl;
-		intUnlock
-		return 1;
-	}
-
-	buff = new BoundedBuffer(buffSize);
-	Producer **pro = new Producer*[N];
-	KeyboardEvent* kev;
-	int i;
-	
-	con = new Consumer(buff);
-	  
-	con->start();
-
-	for (i=0; i<N; i++){
-		pro[i] = new Producer(buff,'0'+i, TIME_SLICE);
-		pro[i]->start();
-	}
-  
-	kev = new KeyboardEvent(buff);
-	intUnlock
-	
-	kev->start();
-		
-	for (i=0; i<N; i++){
-		delete pro[i];
-	}  
-	delete [] pro;
-	delete kev;
-	delete con;
-	delete buff;
-
-#ifdef FORK
-	const int value = 5;
-	int data = 0, *pData = &data;
-	ID result = Thread::fork();
-	if ( result != -1) {
-		if (result == 0) {
 			intLock
-			cout<<"Child created!"<<endl;
+			cout << "A opened the barrier" << endl;
 			intUnlock
-			*pData = value;
-			data = value + 1;
+
+			barrier->pass();
+
 			intLock
-			cout<<"Child finished!"<<endl;
+			cout << "A passed the barrier" << endl;
 			intUnlock
-			Thread::exit();
-		} else {
-			Thread::waitForForkChildren();
-			assert(value == data);
+
+			intLock
+			cout << "A waits on semaphore" << endl;
+			intUnlock
+
+			sem->wait(0);
+
+			intLock
+			cout << "A waited on semaphore and is free now" << endl;
+			intUnlock
+
+			waiter->wait(30);
+			//turnB->signal();
 		}
 	}
+};
 
-	assert(result > 0);
-#endif
+class B: public Thread {
+protected:
+	void run() {
+		sem = new Semaphore(0);
+		barrier = new Barrier(1);
+		turnB = new Semaphore(1);
+		turnA = new Semaphore(0);
+		waiter = new Semaphore();
+		while(1) {
+			//turnB->wait(0);
 
-	intLock
-	cout<<"userMain finished!"<<endl;
-	intUnlock
-	return 0;
+			intLock
+			cout << "B blocked on the barrier" << endl;
+			intUnlock
+
+			barrier->pass();
+
+			intLock
+			cout << "B passed the barrier" << endl;
+			intUnlock
+
+			barrier->close();
+
+			intLock
+			cout << "B closed the barrier" << endl;
+			intUnlock
+
+			sem->signal();
+
+			intLock
+			cout << "B signaled the semaphore" << endl;
+			intUnlock
+
+			waiter->wait(30);
+			//turnA->signal();
+		}
+	}
+};
+
+int userMain (int argc, char* argv[]) {
+	B b;
+	A a;
+	b.start();
+	a.start();
+
+	a.waitToComplete();
+	b.waitToComplete();
 }
-//---------------------------------------------------------------------------//
