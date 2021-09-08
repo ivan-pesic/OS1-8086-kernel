@@ -36,6 +36,8 @@ unsigned tbp = 0;
 // definition of lists of all PCBs and all Semaphores
 List System::all_PCBs;
 List System::all_semaphores;
+List parents;
+PCB* temp;
 IVTEntry* System::entries[256] = {0};
 #include "STDIO.H"
 // interrupt routine
@@ -73,30 +75,24 @@ void interrupt System::timer(...){
 			System::running->state = PCB::READY;
 		}
 		else {
-			System::running = Scheduler::get();
-			if(System::running == 0) {
-	//			printf("\nU IDLE!");
-				System::running = System::idle_PCB;
+			temp = 0;
+			if((temp = Scheduler::get()) != 0) {
+				while(temp != 0 && temp->children_list && !temp->children_list->empty()){
+					parents.push_back(temp);
+					temp = Scheduler::get();
+				}
+				while(!parents.empty()) {
+					Scheduler::put((PCB*)parents.pop_front());
+				}
+				if(temp) {
+					System::running = temp;
+				}
+				else {
+					System::running = Scheduler::get();
+				}
 			}
-			else if(System::running->children_list && !System::running->children_list->empty()) {
-				List* parents = new List();
-				parents->push_back((PCB*)System::running);
-				int flag = 1;
-				while((System::running = Scheduler::get()) != 0 && flag) {
-					if(System::running->children_list && !System::running->children_list->empty()) {
-						parents->push_back((PCB*)System::running);
-					}
-					else flag = 0;
-//					printf("while1\n");
-				}
-				if(flag) {
-					System::running = (PCB*)(parents->pop_front());
-				}
-				while(!parents->empty()) {
-//					printf("while2\n");
-					Scheduler::put((PCB*)parents->pop_front());
-				}
-				delete parents;
+			else {
+				System::running = System::idle_PCB;
 			}
 		}
 		//printf("ID: %d, %d\n", System::running->pcb_id, System::running->state);

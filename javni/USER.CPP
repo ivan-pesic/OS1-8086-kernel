@@ -125,49 +125,71 @@ void Consumer::run () {
 	intUnlock
 }
 
-class testThread : public Thread {
+class WaitThread: public Thread {
 public:
-	testThread() : Thread() {
-		this->start();
+	WaitThread(int t): time(t) {}
+	~WaitThread() {
+		waitToComplete();
 	}
-	void run() {
+private:
+	int time;
 
-		for(long i = 0; i < 100000; i++) {
-			for(long j = 0; j < 10000; j++);
+	void run() {
+		intLock
+		cout << "WaitThread start!" << endl;
+		intUnlock
+		for(int i = 0; i < time; ++i) {
+			for(int j = 0; j < time; ++j);
 		}
 		intLock
-		cout << "testThread: " << getId() << endl;
+		cout << "WaitThread end!" << endl;
 		intUnlock
 	}
-	~testThread() { waitToComplete(); }
+};
+
+class testThread : public Thread {
+public:
+    testThread() : Thread() {
+        this->start();
+    }
+    void run() {
+
+        for(long i = 0; i < 100000; i++) {
+            for(long j = 0; j < 10000; j++);
+        }
+        intLock
+        cout << "testThread: " << getId() << endl;
+        intUnlock
+    }
+    ~testThread() { waitToComplete(); }
 };
 
 
 
 int userMain (int argc, char* argv[]) {
-	testThread threads[20];
-	int i;
+    testThread threads[20];
+    int i;
 
-	for(i = 0; i < 50; i++) {
-		int res = Thread::fork();
-		if(res != -1) {
-			if(res == 0) {
-				intLock
-				cout << "CHILD! " << Thread::getRunningId() << endl;
-				intUnlock
-				Thread::exit();
-			}
-			else {
-				intLock
-				cout << "PARENT! " << Thread::getRunningId() << endl;
-				intUnlock
-				Thread::waitForForkChildren();
-			}
-		}
-	}
-	for(i = 0; i < 20; i++) {
-		threads[i].waitToComplete();
-	}
+    for(i = 0; i < 50; i++) {
+        int res = Thread::fork();
+        if(res != -1) {
+            if(res == 0) {
+                intLock
+                cout << "CHILD! " << Thread::getRunningId() << endl;
+                intUnlock
+                Thread::exit();
+            }
+            else {
+                intLock
+                cout << "PARENT! " << Thread::getRunningId() << endl;
+                intUnlock
+                Thread::waitForForkChildren();
+            }
+        }
+    }
+    for(i = 0; i < 20; i++) {
+        threads[i].waitToComplete();
+    }
 }
 /*{
 	BoundedBuffer *buff;
