@@ -40,3 +40,12 @@ void Semaphore::printList() {
 	myImpl->printList();
 }
  */
+
+
+void Semaphore::addOwner() {
+	KernelSem::add_owner((PCB*)System::running);
+}
+
+void Semaphore::removeOwner(ID id) {
+	myImpl->remove_owner(id);
+}

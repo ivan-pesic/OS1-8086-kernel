@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------//
 //  Otkomentarisati ukoliko se testira fork
 //---------------------------------------------------------------------------//
- #define FORK
+#define FORK
 //---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
@@ -36,7 +36,7 @@ class Producer : public Thread {
 public:
 	Producer (BoundedBuffer* bb, char y, Time time_slice);
 	virtual ~Producer() {waitToComplete(); }
-    Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
+	Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
 protected:
 	virtual void run ();
 	char produce() {return x;}; // Produce an item
@@ -79,8 +79,8 @@ void tick(){
 
 Producer::Producer (BoundedBuffer* bb, char y, Time time_slice) 
 : Thread(defaultStackSize, time_slice),myBuffer(bb), x(y), sleep(0), time_slice_clone(time_slice) {}
-	
-	void Producer::run () {
+
+void Producer::run () {
 	while(!theEnd) {
 		char d = produce();
 		myBuffer->append(d);
@@ -98,7 +98,7 @@ void Consumer::consume(char p) {
 } // Consume an item
 
 void Consumer::run () {
-		
+
 	int i = 0;
 	while(!theEnd) {
 		char d = myBuffer->take();
@@ -108,18 +108,18 @@ void Consumer::run () {
 			i = 0;
 		}else for(int j=0;j<200;j++);
 	}
- 
+
 	intLock
 	cout<<endl<<"ESC pressed - empty the buffer!"<<endl;
 	intUnlock
-	
+
 	while (myBuffer->fullCount()){
 		char d = myBuffer->take();
 		consume(d);
 		dispatch();
 	}
-	
-	
+
+
 	intLock
 	cout<<endl<<"Happy End"<<endl;
 	intUnlock
@@ -131,80 +131,45 @@ void Consumer::run () {
 
 int userMain (int argc, char* argv[])
 {
-	BoundedBuffer *buff;
-	Consumer *con;
-	
-	intLock
-	if(argc <2){
-		cout<<"Invalid input!"<<endl;
-		intUnlock
-		return -1;
-	}
-	int buffSize = atoi(argv[1]);
-	N = atoi(argv[2]);
-	//N = N>19 ? 19 : N;
-	TIME_SLICE = atoi(argv[3]);
-	
-	if(buffSize<N) {
-		cout<<"Number of Produsers is larger then Buffer size!"<<endl;
-		intUnlock
-		return 1;
-	}
-
-	buff = new BoundedBuffer(buffSize);
-	Producer **pro = new Producer*[N];
-	KeyboardEvent* kev;
-	int i;
-	
-	con = new Consumer(buff);
-	  
-	con->start();
-
-	for (i=0; i<N; i++){
-		pro[i] = new Producer(buff,'0'+i, TIME_SLICE);
-		pro[i]->start();
-	}
-  
-	kev = new KeyboardEvent(buff);
-	intUnlock
-	
-	kev->start();
-		
-	for (i=0; i<N; i++){
-		delete pro[i];
-	}  
-	delete [] pro;
-	delete kev;
-	delete con;
-	delete buff;
-
-#ifdef FORK
-	const int value = 5;
-	int data = 0, *pData = &data;
-	ID result = Thread::fork();
-	if ( result != -1) {
-		if (result == 0) {
+	Semaphore mySem(0);
+	cout << "START" << endl;
+	Semaphore shared_sem(1);
+	for(int i = 0; i < 50; i++) {
+		int pid = Thread::fork();
+		cout << "PID: " << pid << endl;
+		if(pid) continue;
+		else cout << "CHILD" << endl;
+		Semaphore::addOwner();
+		for(int j = 0; j < 10; j++) {
+			shared_sem.wait(0);
 			intLock
-			cout<<"Child created!"<<endl;
+			cout << "IN CRITICAL SECTION " << Thread::getRunningId() << endl;
 			intUnlock
-			*pData = value;
-			data = value + 1;
-			intLock
-			cout<<"Child finished!"<<endl;
-			intUnlock
-			Thread::exit();
-		} else {
-			Thread::waitForForkChildren();
-			assert(value == data);
+			shared_sem.signal();
 		}
+		shared_sem.removeOwner(Thread::getRunningId());
+		intLock
+		cout << "SHOULD NOT BE BLOCKED NOW " << Thread::getRunningId() << endl;
+		intUnlock
+		shared_sem.wait(0);
+		shared_sem.wait(0);
+		shared_sem.wait(0);
+		intLock
+		cout << "PASSED WAIT " << Thread::getRunningId() << endl;
+		intUnlock
+		Thread::exit();
 	}
-
-	assert(result > 0);
-#endif
+	shared_sem.wait(0);
+	shared_sem.wait(0);
 
 	intLock
-	cout<<"userMain finished!"<<endl;
+	cout << "PASSED FINAL WAIT " << Thread::getRunningId() << endl;
 	intUnlock
-	return 0;
+
+	Semaphore::addOwner(); // has to be there because it has to wait for fork children
+	Thread::waitForForkChildren();
+	intLock
+	cout << "HAPPY END";
+	intUnlock
 }
 //---------------------------------------------------------------------------//

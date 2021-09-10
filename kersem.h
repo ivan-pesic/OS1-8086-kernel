@@ -11,6 +11,7 @@
 #include "list.h"
 
 typedef unsigned int Time;
+typedef int ID;
 class PCB;
 class Semaphore;
 
@@ -31,7 +32,11 @@ public:
 	void signal();
 
 	int val() const;
+
+	static void add_owner(PCB* new_owner);
+	void remove_owner(ID id);
 private:
+	int check_if_owner(PCB* process);
 	struct waiting_data {
 		PCB* pcb;
 		KernelSem* semaphore;
@@ -50,6 +55,7 @@ private:
 	int value;
 	List blocked;
 	List waiting;
+	List owners;
 };
 
 #endif /* KERSEM_H_ */

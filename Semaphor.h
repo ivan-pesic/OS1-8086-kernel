@@ -9,7 +9,7 @@
 #define SEMAPHOR_H_
 
 typedef unsigned int Time;
-
+typedef int ID;
 class KernelSem;
 
 class Semaphore {
@@ -21,6 +21,9 @@ public:
 
 	virtual int wait (Time maxTimeToWait);
 	virtual void signal();
+
+	static void addOwner();
+	void removeOwner(ID id);
 
 	int val () const;  // Returns the current value of the semaphore
 private:

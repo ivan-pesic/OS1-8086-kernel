@@ -73,6 +73,10 @@ void KernelSem::update_list() {
 
 int KernelSem::wait(Time max_time_to_wait) {
 	lock
+	if(!check_if_owner((PCB*)System::running)) {
+		unlock
+		return -1;
+	}
 	int return_value = 1;
 	if(--value < 0) {
 		PCB* to_block = (PCB*)(System::running);
@@ -102,6 +106,11 @@ int KernelSem::wait(Time max_time_to_wait) {
 
 void KernelSem::signal() {
 	lock
+	if(!check_if_owner((PCB*)System::running)) {
+		unlock
+		return;
+	}
+
 	if(value++ < 0) {
 		PCB* potentially_ublocked = 0;
 		if(!waiting.empty()) {
@@ -179,4 +188,45 @@ void KernelSem::increment() {
 	lock
 	value++;
 	unlock
+}
+
+void KernelSem::add_owner(PCB* new_owner) {
+	lock
+	System::all_semaphores.to_front();
+	while(System::all_semaphores.has_current()) {
+		((KernelSem*)(System::all_semaphores.get_current_data()))->owners.push_back(new_owner);
+		System::all_semaphores.to_next();
+	}
+	unlock
+}
+
+void KernelSem::remove_owner(ID id) {
+	lock
+	PCB* to_remove = 0;
+	owners.to_front();
+	while(owners.has_current()) {
+		if(((PCB*)(owners.get_current_data()))->pcb_id == id) {
+			to_remove = (PCB*)owners.get_current_data();
+			break;
+		}
+		owners.to_next();
+	}
+	if(to_remove)
+		owners.remove_element(to_remove);
+	unlock
+}
+
+int KernelSem::check_if_owner(PCB* process) {
+	lock
+	int ret_val = 0;
+	owners.to_front();
+	while(owners.has_current()) {
+		if((PCB*)(owners.get_current_data()) == process) {
+			ret_val = 1;
+			break;
+		}
+		owners.to_next();
+	}
+	unlock
+	return ret_val;
 }
