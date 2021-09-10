@@ -163,6 +163,14 @@ void KernelSem::signal() {
 				}
 			}
 			if(to_release_wd && to_release_wd->pcb->pcb_id == min_id) {
+				waiting.to_front();
+				while((waiting_data*)waiting.get_current_data() != to_release_wd) {
+					waiting.to_next();
+				}
+				waiting.to_next();
+				if(waiting.has_current()) {
+					((waiting_data*)(waiting.get_current_data()))->time_to_wait += to_release_wd->time_to_wait;
+				}
 				waiting.remove_element(to_release_wd);
 				potentially_ublocked = to_release_wd->pcb;
 				delete to_release_wd;
