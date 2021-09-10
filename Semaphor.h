@@ -17,6 +17,7 @@ public:
 	// for testing:
 	//void printList();
 	Semaphore (int init=1);
+	void turnOnPriorities();
 	virtual ~Semaphore ();
 
 	virtual int wait (Time maxTimeToWait);

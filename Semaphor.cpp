@@ -40,3 +40,7 @@ void Semaphore::printList() {
 	myImpl->printList();
 }
  */
+
+void Semaphore::turnOnPriorities() {
+	myImpl->turn_on_priorities();
+}

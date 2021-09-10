@@ -19,6 +19,7 @@ KernelSem::KernelSem(int initial_value) {
 	sem_lock
 	System::all_semaphores.push_back(this);
 	sem_unlock
+	priority_flag = 0;
 	KernelSem::live_semaphores++;
 	unlock
 }
@@ -71,10 +72,14 @@ void KernelSem::update_list() {
 	unlock
 }
 
+#include "STDIO.H"
+
 int KernelSem::wait(Time max_time_to_wait) {
 	lock
 	int return_value = 1;
+	printf("WAIT id: %d ", Thread::getRunningId());
 	if(--value < 0) {
+		printf("BLOCKED!\n");
 		PCB* to_block = (PCB*)(System::running);
 		to_block->block();
 		if(max_time_to_wait == 0) {
@@ -96,30 +101,79 @@ int KernelSem::wait(Time max_time_to_wait) {
 			System::running->unblocked_by_time = 0;
 		}
 	}
+	else {
+		printf("NOT BLOCKED!\n");
+	}
 	unlock
 	return return_value;
 }
 
 void KernelSem::signal() {
 	lock
-	if(value++ < 0) {
-		PCB* potentially_ublocked = 0;
-		if(!waiting.empty()) {
-			sem_lock
-			//waiting.print_list();
-			waiting_data* potential_wd = (waiting_data*)(waiting.pop_back());
-			sem_unlock
+	printf("SIGNAL id: %d\n", Thread::getRunningId());
+	PCB* potentially_ublocked = 0;
+	if(!priority_flag) {
+		if(value++ < 0) {
+			if(!waiting.empty()) {
+				sem_lock
+				//waiting.print_list();
+				waiting_data* potential_wd = (waiting_data*)(waiting.pop_back());
+				sem_unlock
 
-			if(potential_wd) {
-				potentially_ublocked = potential_wd->pcb;
+				if(potential_wd) {
+					potentially_ublocked = potential_wd->pcb;
+					potentially_ublocked->unblock();
+					delete potential_wd;
+				}
+			}
+
+			else if(!blocked.empty()) {
+				potentially_ublocked = (PCB*)(blocked.pop_front());
 				potentially_ublocked->unblock();
-				delete potential_wd;
 			}
 		}
-
-		else if(!blocked.empty()) {
-			potentially_ublocked = (PCB*)(blocked.pop_front());
-			potentially_ublocked->unblock();
+	}
+	else {
+		if(value++ < 0) {
+			ID min_id = 32767;
+			waiting_data* to_release_wd = 0;
+			PCB* to_release_pcb = 0;
+			if(!waiting.empty()) {
+				//printf("\nwaiting nije prazan\n");
+				waiting.to_front();
+				while(waiting.has_current()) {
+					waiting_data* tmp = (waiting_data*)waiting.get_current_data();
+					if(tmp->pcb->pcb_id < min_id) {
+						min_id = tmp->pcb->pcb_id;
+						to_release_wd = tmp;
+					}
+					waiting.to_next();
+				}
+			}
+			if(!blocked.empty()) {
+				//printf("\nblocked nije prazan\n");
+				blocked.to_front();
+				while(blocked.has_current()) {
+					PCB* tmp = (PCB*)blocked.get_current_data();
+					if(tmp->pcb_id < min_id) {
+						min_id = tmp->pcb_id;
+						to_release_pcb = tmp;
+					}
+					blocked.to_next();
+				}
+			}
+			if(to_release_wd && to_release_wd->pcb->pcb_id == min_id) {
+				waiting.remove_element(to_release_wd);
+				potentially_ublocked = to_release_wd->pcb;
+				delete to_release_wd;
+				potentially_ublocked->unblock();
+				//printf("\n%d\n", min_id);
+			}
+			if(to_release_pcb && to_release_pcb->pcb_id == min_id) {
+				blocked.remove_element(to_release_pcb);
+				to_release_pcb->unblock();
+				//printf("\n%d\n", min_id);
+			}
 		}
 	}
 	unlock
@@ -179,4 +233,8 @@ void KernelSem::increment() {
 	lock
 	value++;
 	unlock
+}
+
+void KernelSem::turn_on_priorities() {
+	priority_flag = 1;
 }

@@ -26,6 +26,7 @@ public:
 
 	static void tick();
 	void update_list();
+	void turn_on_priorities();
 
 	int wait(Time max_time_to_wait);
 	void signal();
@@ -48,6 +49,7 @@ private:
 	void insert_waiting(waiting_data* wd);
 	void increment();
 	int value;
+	int priority_flag;
 	List blocked;
 	List waiting;
 };
