@@ -20,6 +20,8 @@ public:
 	virtual ~Thread();
 	ID getId();
 
+	static void makeFriends(Thread* t1, Thread* t2);
+
 	static ID getRunningId();
 	static Thread * getThreadById(ID id);
 

@@ -4,7 +4,7 @@
  *  Created on: Aug 11, 2021
  *      Author: OS1
  */
-
+#include "STDIO.H"
 #include "pcb.h"
 #include "system.h"
 #include "list.h"
@@ -24,7 +24,8 @@ PCB::PCB() {
 	this->parent = 0;
 	this->parent_sem = 0;
 #endif
-
+	failed_to_start = 0;
+	number_of_friends = 0;
 	pcb_id = ++global_id;
 	time_slice = defaultTimeSlice;
 	unblocked_by_time = 0;
@@ -50,7 +51,8 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 	this->parent = 0;
 	this->parent_sem = 0;
 #endif
-
+	failed_to_start = 0;
+	number_of_friends = 0;
 	this->my_thread = my_thread;
 	this->time_slice = time_slice;
 	pcb_id = ++global_id;
@@ -122,11 +124,30 @@ PCB::~PCB() {
 	unlock
 }
 
+int PCB::check_if_friends_allow() {
+	int cnt = 0;
+	for(int i = 0; i < number_of_friends; i++) {
+		if(friends[i]->state != PCB::NEW && friends[i]->state != PCB::FINISHED) {
+			++cnt;
+			if(cnt == 2)
+				return 0;
+		}
+	}
+	return 1;
+}
+
 void PCB::start() {
 	lock
-	if(state == PCB::NEW) {
-		state = PCB::READY;
-		Scheduler::put(this);
+	if(check_if_friends_allow()) {
+		failed_to_start = 0;
+		if(state == PCB::NEW) {
+			state = PCB::READY;
+			Scheduler::put(this);
+		}
+	}
+	else {
+		//printf("%d failed to start\n", pcb_id);
+		failed_to_start = 1;
 	}
 	unlock
 }
@@ -224,6 +245,14 @@ void PCB::exit() {
 			if(parent->parent_sem->val() < 0) // comment
 				parent->parent_sem->signal();
 	}
+
+	for(int i = 0; i < number_of_friends; i++) {
+		if(friends[i]->failed_to_start) {
+			//printf("friends[%d]->pcb_id = %d\n", i, friends[i]->pcb_id);
+			friends[i]->start();
+		}
+
+	}
 	unlock
 	dispatch();
 }
@@ -233,3 +262,14 @@ void PCB::wait_for_fork_children() {
 	}
 }
 #endif
+
+void PCB::make_friends(PCB* p1, PCB* p2) {
+	lock
+	if(p1->state == PCB::NEW && p2->state == PCB::NEW) {
+		if(p1->number_of_friends < 10 && p2->number_of_friends < 10) {
+			p1->friends[p1->number_of_friends++] = p2;
+			p2->friends[p2->number_of_friends++] = p1;
+		}
+	}
+	unlock
+}

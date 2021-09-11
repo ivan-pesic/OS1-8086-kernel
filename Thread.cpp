@@ -146,3 +146,7 @@ Thread* Thread::clone() const {
 	return 0;
 }
 #endif
+
+void Thread::makeFriends(Thread* t1, Thread* t2) {
+	PCB::make_friends(t1->myPCB, t2->myPCB);
+}

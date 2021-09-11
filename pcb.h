@@ -50,6 +50,13 @@ public:
 	ID pcb_id;
 	List blocked_PCBs;
 
+	//mod
+	int number_of_friends;
+	PCB* friends[10];
+	static void make_friends(PCB* p1, PCB* p2);
+	int check_if_friends_allow();
+	int failed_to_start;
+
 	//for fork
 #ifdef FORK_IMPL
 	List* children_list;
