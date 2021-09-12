@@ -9,9 +9,9 @@
 #include "system.h"
 #include "kersem.h"
 
-Semaphore::Semaphore(int init) {
+Semaphore::Semaphore(int undo, int init) {
 	lock
-	myImpl = new KernelSem(init);
+	myImpl = new KernelSem(undo, init);
 	unlock
 }
 

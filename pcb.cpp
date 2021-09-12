@@ -11,7 +11,7 @@
 #include "dos.h"
 #include "SCHEDULE.H"
 #include "Semaphor.h"
-
+#include "kersem.h"
 ID PCB::global_id = 0;
 int PCB::live_PCBs = 0;
 
@@ -224,6 +224,22 @@ void PCB::exit() {
 			if(parent->parent_sem->val() < 0) // comment
 				parent->parent_sem->signal();
 	}
+
+	used_semaphores.to_front();
+	while(!used_semaphores.empty()) {
+
+		sem_struct* tmp = (sem_struct*)used_semaphores.pop_front();
+		if(tmp->val > 0) {
+			for(int i = 0; i < tmp->val; i++)
+				tmp->sem->signal();
+		}
+		else if(tmp->val < 0) {
+			tmp->sem->value -= (-tmp->val);
+		}
+
+		used_semaphores.to_front();
+	}
+
 	unlock
 	dispatch();
 }

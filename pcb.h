@@ -14,6 +14,7 @@
 #include "Thread.h"
 #include "list.h"
 #include "Semaphor.h"
+class KernelSem;
 
 class PCB {
 	static ID global_id;
@@ -49,6 +50,17 @@ public:
 	State state;
 	ID pcb_id;
 	List blocked_PCBs;
+
+	//modifikacija
+	struct sem_struct {
+		KernelSem* sem;
+		int val;
+		sem_struct(KernelSem* s, int v) {
+			sem = s;
+			val = v;
+		}
+	};
+	List used_semaphores;
 
 	//for fork
 #ifdef FORK_IMPL

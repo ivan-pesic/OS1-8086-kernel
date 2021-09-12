@@ -16,7 +16,7 @@ class Semaphore {
 public:
 	// for testing:
 	//void printList();
-	Semaphore (int init=1);
+	Semaphore (int undo, int init=1);
 	virtual ~Semaphore ();
 
 	virtual int wait (Time maxTimeToWait);

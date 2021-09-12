@@ -21,7 +21,7 @@ public:
 	static int waiting_data_counter;
 	static int live_semaphores;
 
-	KernelSem(int initial_value);
+	KernelSem(int undo, int initial_value);
 	~KernelSem();
 
 	static void tick();
@@ -31,6 +31,8 @@ public:
 	void signal();
 
 	int val() const;
+protected:
+	friend class PCB;
 private:
 	struct waiting_data {
 		PCB* pcb;
@@ -47,6 +49,7 @@ private:
 
 	void insert_waiting(waiting_data* wd);
 	void increment();
+	int undo;
 	int value;
 	List blocked;
 	List waiting;

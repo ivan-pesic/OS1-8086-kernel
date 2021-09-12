@@ -13,8 +13,9 @@
 int KernelSem::waiting_data_counter = 0;
 int KernelSem::live_semaphores = 0;
 
-KernelSem::KernelSem(int initial_value) {
+KernelSem::KernelSem(int undo, int initial_value) {
 	lock
+	this->undo = undo;
 	value = initial_value;
 	sem_lock
 	System::all_semaphores.push_back(this);
@@ -71,9 +72,30 @@ void KernelSem::update_list() {
 	unlock
 }
 
+void fetch_wait(KernelSem* sem) {
+	System::running->used_semaphores.to_front();
+	int found = 0;
+	while(System::running->used_semaphores.has_current()) {
+
+		if(sem == ((PCB::sem_struct*)(System::running->used_semaphores.get_current_data()))->sem) {
+			found = 1;
+			((PCB::sem_struct*)(System::running->used_semaphores.get_current_data()))->val++;
+			break;
+		}
+
+		System::running->used_semaphores.to_next();
+	}
+	if(!found) {
+		System::running->used_semaphores.push_back(new PCB::sem_struct(sem, 1));
+	}
+}
+
 int KernelSem::wait(Time max_time_to_wait) {
 	lock
 	int return_value = 1;
+	if(undo && max_time_to_wait == 0) {
+		fetch_wait(this);
+	}
 	if(--value < 0) {
 		PCB* to_block = (PCB*)(System::running);
 		to_block->block();
@@ -100,8 +122,29 @@ int KernelSem::wait(Time max_time_to_wait) {
 	return return_value;
 }
 
+void fetch_signal(KernelSem* sem) {
+	System::running->used_semaphores.to_front();
+	int found = 0;
+	while(System::running->used_semaphores.has_current()) {
+
+		if(sem == ((PCB::sem_struct*)(System::running->used_semaphores.get_current_data()))->sem) {
+			found = 1;
+			((PCB::sem_struct*)(System::running->used_semaphores.get_current_data()))->val--;
+			break;
+		}
+
+		System::running->used_semaphores.to_next();
+	}
+	if(!found) {
+		System::running->used_semaphores.push_back(new PCB::sem_struct(sem, -1));
+	}
+}
+
 void KernelSem::signal() {
 	lock
+	if(undo) {
+		fetch_signal(this);
+	}
 	if(value++ < 0) {
 		PCB* potentially_ublocked = 0;
 		if(!waiting.empty()) {
