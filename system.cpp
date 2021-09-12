@@ -37,7 +37,7 @@ unsigned tbp = 0;
 List System::all_PCBs;
 List System::all_semaphores;
 IVTEntry* System::entries[256] = {0};
-
+#include "STDIO.H"
 // interrupt routine
 void interrupt System::timer(...){
 	if (!System::context_switch_on_demand) {
@@ -69,7 +69,7 @@ void interrupt System::timer(...){
 
 		System::running = Scheduler::get();
 		if(System::running == 0) {
-			//syncPrintf("\nU IDLE!");
+			//printf("\nU IDLE!");
 			System::running = System::idle_PCB;
 		}
 		tsp = System::running->sp;

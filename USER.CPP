@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------//
 //  Otkomentarisati ukoliko se testira fork
 //---------------------------------------------------------------------------//
- #define FORK
+#define FORK
 //---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
@@ -36,7 +36,7 @@ class Producer : public Thread {
 public:
 	Producer (BoundedBuffer* bb, char y, Time time_slice);
 	virtual ~Producer() {waitToComplete(); }
-    Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
+	Thread* clone() const { return new Producer(myBuffer, x, time_slice_clone); }
 protected:
 	virtual void run ();
 	char produce() {return x;}; // Produce an item
@@ -79,8 +79,8 @@ void tick(){
 
 Producer::Producer (BoundedBuffer* bb, char y, Time time_slice) 
 : Thread(defaultStackSize, time_slice),myBuffer(bb), x(y), sleep(0), time_slice_clone(time_slice) {}
-	
-	void Producer::run () {
+
+void Producer::run () {
 	while(!theEnd) {
 		char d = produce();
 		myBuffer->append(d);
@@ -98,7 +98,7 @@ void Consumer::consume(char p) {
 } // Consume an item
 
 void Consumer::run () {
-		
+
 	int i = 0;
 	while(!theEnd) {
 		char d = myBuffer->take();
@@ -108,103 +108,59 @@ void Consumer::run () {
 			i = 0;
 		}else for(int j=0;j<200;j++);
 	}
- 
+
 	intLock
 	cout<<endl<<"ESC pressed - empty the buffer!"<<endl;
 	intUnlock
-	
+
 	while (myBuffer->fullCount()){
 		char d = myBuffer->take();
 		consume(d);
 		dispatch();
 	}
-	
-	
+
+
 	intLock
 	cout<<endl<<"Happy End"<<endl;
 	intUnlock
 }
 
+#include "kersem.h"
 
+Semaphore sem;
+Semaphore sleeper(0);
 
-
-
-int userMain (int argc, char* argv[])
-{
-	BoundedBuffer *buff;
-	Consumer *con;
-	
-	intLock
-	if(argc <2){
-		cout<<"Invalid input!"<<endl;
-		intUnlock
-		return -1;
-	}
-	int buffSize = atoi(argv[1]);
-	N = atoi(argv[2]);
-	//N = N>19 ? 19 : N;
-	TIME_SLICE = atoi(argv[3]);
-	
-	if(buffSize<N) {
-		cout<<"Number of Produsers is larger then Buffer size!"<<endl;
-		intUnlock
-		return 1;
-	}
-
-	buff = new BoundedBuffer(buffSize);
-	Producer **pro = new Producer*[N];
-	KeyboardEvent* kev;
-	int i;
-	
-	con = new Consumer(buff);
-	  
-	con->start();
-
-	for (i=0; i<N; i++){
-		pro[i] = new Producer(buff,'0'+i, TIME_SLICE);
-		pro[i]->start();
-	}
-  
-	kev = new KeyboardEvent(buff);
-	intUnlock
-	
-	kev->start();
-		
-	for (i=0; i<N; i++){
-		delete pro[i];
-	}  
-	delete [] pro;
-	delete kev;
-	delete con;
-	delete buff;
-
-#ifdef FORK
-	const int value = 5;
-	int data = 0, *pData = &data;
-	ID result = Thread::fork();
-	if ( result != -1) {
-		if (result == 0) {
-			intLock
-			cout<<"Child created!"<<endl;
-			intUnlock
-			*pData = value;
-			data = value + 1;
-			intLock
-			cout<<"Child finished!"<<endl;
-			intUnlock
-			Thread::exit();
-		} else {
-			Thread::waitForForkChildren();
-			assert(value == data);
+class RWThread : public Thread {
+public:
+	RWThread() : Thread() {}
+	~RWThread() { waitToComplete(); }
+protected:
+	void run() {
+		KernelSem::Operation op = rand() % 2 + 1;
+		if(op == KernelSem::RD) {
+			sem.function1('r');
 		}
+		else if(op == KernelSem::WR) {
+			sem.function1('w');
+		}
+		//for(long i = 0; i < 100000; i++)
+			//for(long j = 0; j < 1000; j++);
+		sleeper.wait(10);
+		sem.function2();
+	}
+};
+
+int userMain (int argc, char* argv[]) {
+	//sleeper = new Semaphore(0);
+	RWThread arr[10];
+	for(int i = 0; i < 10; i++) {
+		arr[i].start();
 	}
 
-	assert(result > 0);
-#endif
+	for(int j = 0; j < 10; j++) {
+		arr[j].waitToComplete();
+	}
 
-	intLock
-	cout<<"userMain finished!"<<endl;
-	intUnlock
-	return 0;
+	cout << "Happy end" << endl;
 }
 //---------------------------------------------------------------------------//

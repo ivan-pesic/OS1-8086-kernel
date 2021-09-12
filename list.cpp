@@ -6,7 +6,7 @@
  */
 #define nullptr 0
 
-#include "List.h"
+#include "list.h"
 #include "system.h"
 
 int List::number_of_nodes = 0;

@@ -27,6 +27,22 @@ public:
 	static void tick();
 	void update_list();
 
+	//mod
+	void function1(char c);
+	void function2();
+	enum Operation { NOP, RD, WR };
+	Operation current_operation;
+	struct holder_struct {
+		PCB* holder;
+		Operation op;
+		holder_struct(PCB* h, Operation o) {
+			holder = h;
+			op = o;
+		}
+	};
+	List holders;
+	List requests;
+
 	int wait(Time max_time_to_wait);
 	void signal();
 

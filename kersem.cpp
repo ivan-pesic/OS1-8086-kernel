@@ -16,6 +16,7 @@ int KernelSem::live_semaphores = 0;
 KernelSem::KernelSem(int initial_value) {
 	lock
 	value = initial_value;
+	current_operation = NOP;
 	sem_lock
 	System::all_semaphores.push_back(this);
 	sem_unlock
@@ -41,6 +42,7 @@ KernelSem::~KernelSem() {
 void KernelSem::tick() {
 	lock
 	System::all_semaphores.to_front();
+	//cout << "SEM LIST SIZE: " << System::all_semaphores.size_of_list() << endl;
 	while (System::all_semaphores.has_current()) {
 		KernelSem* sem = (KernelSem*)(System::all_semaphores.get_current_data());
 		if(sem)
@@ -53,11 +55,15 @@ void KernelSem::tick() {
 void KernelSem::update_list() {
 	lock
 	waiting_data* temp_wd;
+
 	if (!waiting.empty()) {
 		waiting.to_front();
 		temp_wd = (waiting_data*)(waiting.get_current_data());
-		if(temp_wd->time_to_wait > 0)
+		if(temp_wd->time_to_wait > 0) {
+			//cout << "TTW: " << temp_wd->time_to_wait << endl;
 			temp_wd->time_to_wait--;
+		}
+
 
 		while(!waiting.empty() && ((waiting_data*)(waiting.get_current_data()))->time_to_wait == 0) {
 			temp_wd = (waiting_data*)(waiting.pop_front());
@@ -68,6 +74,13 @@ void KernelSem::update_list() {
 			waiting.to_front();
 		}
 	}
+	/*waiting.to_front();
+	cout << endl;
+	while(waiting.has_current()) {
+		waiting_data* tmp = (waiting_data*)waiting.get_current_data();
+		cout << tmp->time_to_wait << " ";
+		waiting.to_next();
+	}*/
 	unlock
 }
 
@@ -82,8 +95,10 @@ int KernelSem::wait(Time max_time_to_wait) {
 			//blocked.print_list();
 		}
 		else {
+			//cout << "max_time_to_wait: " << max_time_to_wait << endl;
 			sem_lock
 			insert_waiting(new waiting_data(to_block, this, max_time_to_wait));
+			//waiting.print_list();
 			sem_unlock
 		}
 		unlock
@@ -171,6 +186,14 @@ void KernelSem::insert_waiting(waiting_data* wd) {
 	else
 		waiting.push_back(wd);
 
+	/*waiting.to_front();
+	cout << endl;
+	while(waiting.has_current()) {
+		waiting_data* tmp = (waiting_data*)waiting.get_current_data();
+		cout << tmp->time_to_wait << " ";
+		waiting.to_next();
+	}*/
+
 	sem_unlock
 	unlock
 }
@@ -178,5 +201,117 @@ void KernelSem::insert_waiting(waiting_data* wd) {
 void KernelSem::increment() {
 	lock
 	value++;
+	unlock
+}
+
+
+void KernelSem::function1(char c) {
+	lock
+	switch(c) {
+	case 'r': {
+		switch(current_operation) {
+		case NOP: {
+			current_operation = RD;
+			cout << "Thread ID: " << Thread::getRunningId() << " passed f1 wRD cNOP" << endl;
+			holders.push_back((PCB*)System::running);
+			break;
+		}
+		case RD: {
+			cout << "Thread ID: " << Thread::getRunningId() << " passed f1 wRD cRD" << endl;
+			holders.push_back((PCB*)System::running);
+			break;
+		}
+		case WR: {
+			cout << "Thread ID: " << Thread::getRunningId() << " blocked f1 wRD cWR" << endl;
+			requests.push_back(new holder_struct((PCB*)System::running, WR));
+			System::running->block();
+			unlock
+			dispatch();
+			return;
+		}
+		}
+		break;
+	}
+	case 'w': {
+		switch(current_operation) {
+		case NOP: {
+			current_operation = WR;
+			cout << "Thread ID: " << Thread::getRunningId() << " passed f1 wWR cNOP" << endl;
+			holders.push_back((PCB*)System::running);
+			break;
+		}
+		case RD: {
+			requests.push_back(new holder_struct((PCB*)System::running, WR));
+			cout << "Thread ID: " << Thread::getRunningId() << " blocked f1 wWR cRD" << endl;
+			System::running->block();
+			unlock
+			dispatch();
+			return;
+		}
+		case WR: {
+			requests.push_back(new holder_struct((PCB*)System::running, WR));
+			cout << "Thread ID: " << Thread::getRunningId() << " blocked f1 wWR cWR" << endl;
+			System::running->block();
+			unlock
+			dispatch();
+			return;
+		}
+		}
+		break;
+	}
+	}
+	unlock
+}
+#include "intLock.h"
+
+void KernelSem::function2() {
+	lock
+	intLock
+	//cout << "f2 called by: " << System::running->pcb_id << endl;
+	intUnlock
+	if(!holders.remove_element((PCB*)System::running))
+		cout << "ERRORCINA" << endl;
+	if(holders.empty()) {
+		intLock
+		//cout << "holders empty" << endl;
+		intUnlock
+		if(requests.empty()) {
+			current_operation = NOP;
+		}
+		else {
+			holder_struct* tmp = (holder_struct*)requests.pop_front();
+			if(tmp->op == WR) {
+				current_operation = WR;
+				holders.push_back(tmp->holder);
+				tmp->holder->unblock();
+				cout << "Thread ID: " << tmp->holder->pcb_id << " passed f2 WR" << endl;
+				delete tmp;
+			}
+			else {
+				current_operation = RD;
+				holders.push_back(tmp->holder);
+				tmp->holder->unblock();
+				cout << "Thread ID: " << tmp->holder->pcb_id << " passed f2 RD" << endl;
+				requests.to_front();
+				while(requests.has_current()) {
+					tmp = (holder_struct*)requests.get_current_data();
+					if(tmp->op == RD) {
+						holders.push_back(tmp->holder);
+						tmp->holder->unblock();
+						cout << "Thread ID: " << tmp->holder->pcb_id << " passed f2 RD" << endl;
+						requests.to_next();
+						requests.remove_element(tmp);
+						delete tmp;
+					}
+				}
+			}
+		}
+
+	}
+	else {
+		intLock
+		//cout << holders.size_of_list() << endl;
+		intUnlock
+	}
 	unlock
 }

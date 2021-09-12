@@ -35,6 +35,13 @@ void Semaphore::signal() {
 int Semaphore::val() const {
 	return myImpl->val();
 }
+
+void Semaphore::function1(char c) {
+	myImpl->function1(c);
+}
+void Semaphore::function2() {
+	myImpl->function2();
+}
 /*
 void Semaphore::printList() {
 	myImpl->printList();

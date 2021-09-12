@@ -19,6 +19,10 @@ public:
 	Semaphore (int init=1);
 	virtual ~Semaphore ();
 
+	// modifikacija
+	void function1(char c);
+	void function2();
+
 	virtual int wait (Time maxTimeToWait);
 	virtual void signal();
 
