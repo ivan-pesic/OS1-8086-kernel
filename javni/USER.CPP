@@ -125,86 +125,26 @@ void Consumer::run () {
 	intUnlock
 }
 
-
-
-
-
-int userMain (int argc, char* argv[])
-{
-	BoundedBuffer *buff;
-	Consumer *con;
-	
-	intLock
-	if(argc <2){
-		cout<<"Invalid input!"<<endl;
-		intUnlock
-		return -1;
+struct param_zbir {
+	int a;
+	int b;
+	param_zbir(int a, int b) {
+		this->a = a;
+		this->b = b;
 	}
-	int buffSize = atoi(argv[1]);
-	N = atoi(argv[2]);
-	//N = N>19 ? 19 : N;
-	TIME_SLICE = atoi(argv[3]);
-	
-	if(buffSize<N) {
-		cout<<"Number of Produsers is larger then Buffer size!"<<endl;
-		intUnlock
-		return 1;
-	}
+};
 
-	buff = new BoundedBuffer(buffSize);
-	Producer **pro = new Producer*[N];
-	KeyboardEvent* kev;
-	int i;
-	
-	con = new Consumer(buff);
-	  
-	con->start();
+void wrap_zbir(void* parametar) {
+	param_zbir* p = (param_zbir*)parametar;
+	int a = p->a;
+	int b = p->b;
+	delete p;
+	cout << "Zbir je " << a + b << endl;
+}
 
-	for (i=0; i<N; i++){
-		pro[i] = new Producer(buff,'0'+i, TIME_SLICE);
-		pro[i]->start();
-	}
-  
-	kev = new KeyboardEvent(buff);
-	intUnlock
-	
-	kev->start();
-		
-	for (i=0; i<N; i++){
-		delete pro[i];
-	}  
-	delete [] pro;
-	delete kev;
-	delete con;
-	delete buff;
-
-#ifdef FORK
-	const int value = 5;
-	int data = 0, *pData = &data;
-	ID result = Thread::fork();
-	if ( result != -1) {
-		if (result == 0) {
-			intLock
-			cout<<"Child created!"<<endl;
-			intUnlock
-			*pData = value;
-			data = value + 1;
-			intLock
-			cout<<"Child finished!"<<endl;
-			intUnlock
-			Thread::exit();
-		} else {
-			Thread::waitForForkChildren();
-			assert(value == data);
-		}
-	}
-
-	assert(result > 0);
-#endif
-
-	intLock
-	cout<<"userMain finished!"<<endl;
-	intUnlock
-	return 0;
+int userMain (int argc, char* argv[]) {
+	param_zbir* par = new param_zbir(10, 15);
+	Thread* myThread = new Thread(wrap_zbir, (void*)par, 1024, 1);
+	myThread->waitToComplete();
 }
 //---------------------------------------------------------------------------//

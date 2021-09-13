@@ -4,6 +4,12 @@
 #include "ASSERT.H"
 #include <DOS.H>
 
+Thread::Thread(void (*f) (void*), void* param, StackSize stackSize, Time timeSlice) {
+	lock
+	myPCB = new PCB(f, param, stackSize, timeSlice, this);
+	unlock
+}
+
 Thread::Thread(StackSize stackSize, Time timeSlice) {
 	lock
 	myPCB = new PCB(this, stackSize, timeSlice);

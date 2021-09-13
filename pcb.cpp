@@ -102,7 +102,71 @@ PCB::PCB(Thread* my_thread, StackSize stack_size, Time time_slice) {
 	//enable_interrupts
 	unlock
 }
+PCB::PCB(void (*f) (void*), void* param, StackSize stackSize, Time timeSlice, Thread* my_thread) {
+	lock
+	this->my_thread = my_thread;
+	runFunc = f;
+	this->param = param;
+#ifdef FORK_IMPL
+	//this->number_of_children = 0;
+	this->children_list = 0;
+	this->parent = 0;
+	this->parent_sem = 0;
+#endif
 
+	this->my_thread = my_thread;
+	this->time_slice = time_slice;
+	pcb_id = ++global_id;
+	unblocked_by_time = 0;
+	if(time_slice == 0)
+		this->time_slice = -1;
+
+	if(stack_size < min_stack_size) stack_size = min_stack_size;
+	if(stack_size > max_stack_size) stack_size = max_stack_size;
+
+	unsigned real_stack_size = stack_size / sizeof(unsigned);
+	stack = new unsigned[real_stack_size];
+
+	if(!stack) {
+		--global_id;
+		unlock
+		return;
+	}
+
+	// setovanje I flega u pocetnom PSW-u za nit
+	stack[real_stack_size - 1] = 0x200;
+	// postavljanje adrese funkcije koju ce nit da izvrsava
+	stack[real_stack_size - 2] = FP_SEG(PCB::new_wrapper);
+	stack[real_stack_size - 3] = FP_OFF(PCB::new_wrapper);
+	//svi sacuvani registri pri ulasku u interrupt rutinu
+	sp = FP_OFF(stack + real_stack_size - 12);
+	ss = FP_SEG(stack + real_stack_size - 12);
+	bp = sp;
+
+#ifdef FORK_IMPL
+	stack[real_stack_size - 12] = 0;
+#endif
+
+	this->stack_size = stack_size;
+	state = PCB::NEW;
+
+	if(!System::all_PCBs.push_back(this)) {
+		--global_id;
+		delete[] stack;
+		stack = 0;
+		unlock
+		return;
+	}
+
+	// for testing
+	PCB::live_PCBs++;
+	//disable_interrupts
+	//cout << "PCB constructor: ID: " << pcb_id << ", time_slice: " << this->time_slice << ", stack_size: " << this->stack_size << endl;
+	//enable_interrupts
+	state = READY;
+	Scheduler::put(this);
+	unlock
+}
 PCB::~PCB() {
 	lock
 	System::all_PCBs.remove_element(this);
@@ -162,6 +226,23 @@ Thread* PCB::get_thread_by_id(ID id) {
 	}
 	unlock
 	return 0;
+}
+
+void PCB::new_wrapper() {
+	(System::running->runFunc)(System::running->param);
+#ifndef FORK_IMPL
+	lock
+	PCB* tmp = (PCB*)(System::running->blocked_PCBs.pop_front());
+	while(tmp) {
+		tmp->unblock();
+		tmp = (PCB*)(System::running->blocked_PCBs.pop_front());
+	}
+	System::running->state = PCB::FINISHED;
+	unlock
+	dispatch();
+#else
+	System::running->exit();
+#endif
 }
 
 void PCB::wrapper() {

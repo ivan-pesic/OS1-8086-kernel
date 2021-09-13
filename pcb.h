@@ -22,7 +22,7 @@ public:
 
 	PCB();
 	PCB(Thread* my_thread, StackSize stack_size = defaultStackSize, Time time_slice = defaultTimeSlice);
-
+	PCB(void (*f) (void*), void* param, StackSize stackSize, Time timeSlice, Thread* my_thread = 0);
 	void start();
 	void wait_to_complete();
 	ID get_id();
@@ -30,7 +30,10 @@ public:
 	static Thread* get_thread_by_id(ID id);
 
 	static void wrapper();
+	static void new_wrapper();
 
+	void (*runFunc)(void*);
+	void* param;
 	void block();
 	void unblock();
 	static PCB* get_idle_PCB();
