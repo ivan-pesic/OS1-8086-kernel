@@ -223,7 +223,7 @@ void KernelSem::function1(char c) {
 		}
 		case WR: {
 			cout << "Thread ID: " << Thread::getRunningId() << " blocked f1 wRD cWR" << endl;
-			requests.push_back(new holder_struct((PCB*)System::running, WR));
+			requests.push_back(new holder_struct((PCB*)System::running, RD));
 			System::running->block();
 			unlock
 			dispatch();
